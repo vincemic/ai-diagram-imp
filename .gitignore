@@ -13,6 +13,7 @@ pnpm-debug.log*
 # Editor
 .vscode/*
 !.vscode/launch.json
+!.vscode/tasks.json
 
 # Env
 .env

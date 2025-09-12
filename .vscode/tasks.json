@@ -1,0 +1,67 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: dev (app)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": { "cwd": "${workspaceFolder}/app" },
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": {
+            "regexp": ".*",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "^.*vite v.* dev server running.*$",
+            "endsPattern": "^.*ready in .*ms.*$"
+          }
+        }
+      ]
+    },
+    {
+      "label": "npm: test:watch (vitest)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "test:watch"],
+      "options": { "cwd": "${workspaceFolder}/app" },
+      "isBackground": true,
+      "problemMatcher": ["$tsc-watch"]
+    },
+    {
+      "label": "npm: test:unit",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "test:unit"],
+      "options": { "cwd": "${workspaceFolder}/app" }
+    },
+    {
+      "label": "npm: build",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}/app" }
+    },
+    {
+      "label": "npm: preview",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "preview"],
+      "options": { "cwd": "${workspaceFolder}/app" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: test:e2e",
+      "type": "shell",
+      "command": "npx",
+      "args": ["playwright", "test"],
+      "options": { "cwd": "${workspaceFolder}/app" }
+    }
+  ]
+}
