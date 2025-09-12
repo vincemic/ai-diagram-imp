@@ -4,6 +4,25 @@
 
 AI Diagram Imp web-based diagram generator scaffold (architecture docs, React+Vite app, command pattern, testing setup).
 
+➡ For end-user instructions see: [User Guide](./USER_GUIDE.md)
+
+## Example Screenshots
+
+Captured with Playwright at a 1600x900 desktop viewport using predefined example diagrams (`?example=<key>`). See `tests/e2e/screenshots.spec.ts` and `src/model/examples.ts`.
+
+| Basic Flow | Mini Architecture | Grid Layout |
+|------------|-------------------|-------------|
+| ![Basic Flow](app/screenshots/basic-flow.png) | ![Mini Architecture](app/screenshots/architecture.png) | ![Grid Layout](app/screenshots/grid.png) |
+
+Regenerate locally:
+
+```powershell
+cd app
+npx playwright test tests/e2e/screenshots.spec.ts
+```
+
+Add new examples by editing `src/model/examples.ts` and re-running the screenshot test.
+
 ## Splash Screen
 
 A lightweight splash screen (see `SplashScreen.tsx`) displays the project logo briefly during initial load. By default it only appears in production builds. Control it with an environment variable before `vite` or `npm run dev/build`:
@@ -71,4 +90,8 @@ Then open `http://localhost:5173/ai-diagram-imp/`.
 - Missing assets (404): Ensure `base` in `vite.config.ts` matches deployment path.
 - Old cache: Invalidate with a hard refresh (Ctrl+Shift+R) or bump a query parameter.
 - 404 on deep links: GitHub Pages needs a redirect fallback; consider adding a `404.html` copying `index.html` for client routing (not yet necessary if only root usage).
+
+## License
+
+Released under the MIT License. See [`LICENSE`](./LICENSE) for full text.
 

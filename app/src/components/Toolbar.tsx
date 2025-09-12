@@ -9,6 +9,8 @@ export const Toolbar: React.FC = () => {
   const dispatch = useDiagramStore(selectDispatch);
   const manager = useDiagramStore(selectManager);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const undo = useDiagramStore(s => s.undo);
+  const redo = useDiagramStore(s => s.redo);
 
   // Keyboard shortcuts for undo/redo
   React.useEffect(() => {
@@ -18,24 +20,25 @@ export const Toolbar: React.FC = () => {
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (e.shiftKey) {
-          manager.redo();
+          redo();
         } else {
-          manager.undo();
+          undo();
         }
       } else if (mod && (e.key.toLowerCase() === 'y')) {
         e.preventDefault();
-        manager.redo();
+        redo();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [manager]);
+  }, [undo, redo]);
 
   const handleNew = () => {
     dispatch(new ReplaceState({ schemaVersion: '1.0.0', nodes: [], edges: [], selection: [], metadata: { title: 'Untitled Diagram' } } as any));
-    // Add an initial node for quick visual feedback
-    dispatch(new AddNode({ x: 100, y: 80, type: 'start' }));
     updatePreferences(p => ({ ...p, lastOpenedTitle: 'Untitled Diagram' }));
+  };
+  const handleAddNode = () => {
+    dispatch(new AddNode({ x: 100, y: 80, type: 'start' }));
   };
 
   const handleExportJSON = () => {
@@ -84,14 +87,15 @@ export const Toolbar: React.FC = () => {
   };
 
   return (
-    <div className="toolbar">
+    <div className="toolbar" data-testid="toolbar">
       <button type="button" onClick={handleNew}>New</button>
-      <button type="button" onClick={handleImportClick}>Import</button>
+  <button type="button" onClick={handleImportClick}>Import</button>
+  <button type="button" onClick={handleAddNode}>Add Node</button>
       <button type="button" onClick={handleExportJSON}>Export JSON</button>
       <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
   <span className="toolbar-spacer" />
-      <button type="button" onClick={() => { manager.undo(); }}>Undo</button>
-      <button type="button" onClick={() => { manager.redo(); }}>Redo</button>
+      <button type="button" onClick={() => { undo(); }}>Undo</button>
+      <button type="button" onClick={() => { redo(); }}>Redo</button>
     </div>
   );
 };
