@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { useDiagramStore, selectDispatch, selectManager } from '../core/store.js';
 import { ReplaceState, AddNode } from '../core/commands.js';
 import { validateDiagram } from '../model/validateDiagram.js';
-import { exportCurrentViewAsJPEG } from '../core/exportJPEG.js';
+import { exportCurrentViewAsJPEG, exportCurrentViewAsPNG } from '../core/exportJPEG.js';
 import { updatePreferences } from '../core/preferences.js';
 
 export const Toolbar: React.FC = () => {
@@ -56,6 +56,11 @@ export const Toolbar: React.FC = () => {
     if (!container) return;
     await exportCurrentViewAsJPEG(container, (manager.state.metadata?.title || 'diagram') + '.jpg');
   };
+  const handleExportPNG = async () => {
+    const container = document.getElementById('diagram-container');
+    if (!container) return;
+    await exportCurrentViewAsPNG(container, (manager.state.metadata?.title || 'diagram') + '.png');
+  };
 
   const handleImportClick = () => {
     if (!fileInputRef.current) {
@@ -91,8 +96,9 @@ export const Toolbar: React.FC = () => {
       <button type="button" onClick={handleNew}>New</button>
   <button type="button" onClick={handleImportClick}>Import</button>
   <button type="button" onClick={handleAddNode}>Add Node</button>
-      <button type="button" onClick={handleExportJSON}>Export JSON</button>
-      <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
+  <button type="button" onClick={handleExportJSON}>Export JSON</button>
+  <button type="button" onClick={handleExportPNG}>Export PNG</button>
+  <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
   <span className="toolbar-spacer" />
       <button type="button" onClick={() => { undo(); }}>Undo</button>
       <button type="button" onClick={() => { redo(); }}>Redo</button>
