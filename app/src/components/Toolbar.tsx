@@ -1,0 +1,97 @@
+import React, { useRef } from 'react';
+import { useDiagramStore, selectDispatch, selectManager } from '../core/store.js';
+import { ReplaceState, AddNode } from '../core/commands.js';
+import { validateDiagram } from '../model/validateDiagram.js';
+import { exportCurrentViewAsJPEG } from '../core/exportJPEG.js';
+import { updatePreferences } from '../core/preferences.js';
+
+export const Toolbar: React.FC = () => {
+  const dispatch = useDiagramStore(selectDispatch);
+  const manager = useDiagramStore(selectManager);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Keyboard shortcuts for undo/redo
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isMac = navigator.platform.toLowerCase().includes('mac');
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          manager.redo();
+        } else {
+          manager.undo();
+        }
+      } else if (mod && (e.key.toLowerCase() === 'y')) {
+        e.preventDefault();
+        manager.redo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [manager]);
+
+  const handleNew = () => {
+    dispatch(new ReplaceState({ schemaVersion: '1.0.0', nodes: [], edges: [], selection: [], metadata: { title: 'Untitled Diagram' } } as any));
+    // Add an initial node for quick visual feedback
+    dispatch(new AddNode({ x: 100, y: 80, type: 'start' }));
+    updatePreferences(p => ({ ...p, lastOpenedTitle: 'Untitled Diagram' }));
+  };
+
+  const handleExportJSON = () => {
+    const data = manager.state;
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.download = (data.metadata?.title || 'diagram') + '.json';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+
+  const handleExportJPEG = async () => {
+    const container = document.getElementById('diagram-container');
+    if (!container) return;
+    await exportCurrentViewAsJPEG(container, (manager.state.metadata?.title || 'diagram') + '.jpg');
+  };
+
+  const handleImportClick = () => {
+    if (!fileInputRef.current) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const json = JSON.parse(text);
+              const result = validateDiagram(json);
+              if (result.valid) {
+                dispatch(new ReplaceState(json));
+                if (json?.metadata?.title) updatePreferences(p => ({ ...p, lastOpenedTitle: json.metadata.title }));
+              } else {
+                alert('Invalid diagram JSON. See console for details.');
+                console.error('Validation errors', result.errors);
+          }
+        } catch (e) {
+          alert('Failed to import diagram JSON');
+          console.error(e);
+        }
+      };
+      fileInputRef.current = input;
+    }
+    fileInputRef.current.click();
+  };
+
+  return (
+    <div className="toolbar">
+      <button type="button" onClick={handleNew}>New</button>
+      <button type="button" onClick={handleImportClick}>Import</button>
+      <button type="button" onClick={handleExportJSON}>Export JSON</button>
+      <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
+  <span className="toolbar-spacer" />
+      <button type="button" onClick={() => { manager.undo(); }}>Undo</button>
+      <button type="button" onClick={() => { manager.redo(); }}>Redo</button>
+    </div>
+  );
+};

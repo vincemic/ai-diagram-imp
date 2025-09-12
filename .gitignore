@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.vscode/*
+!.vscode/launch.json
+
+# Env
+.env
+.env.*
+
+# Coverage
+coverage/
+
+# Playwright artifacts
+playwright-report/
+blob-report/
+trace.zip
+
+# Misc
+.DS_Store

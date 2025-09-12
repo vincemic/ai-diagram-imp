@@ -1,0 +1,59 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run App (Vite Dev)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/app"
+    },
+    {
+      "name": "Debug App in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/app/src"
+    },
+    {
+      "name": "Vitest: All Unit Tests",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "test:unit"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "name": "Vitest: Watch Current File",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/app",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vitest", "--watch", "--run", "${file}"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "name": "Playwright: UI Mode",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run test:e2e:ui",
+      "cwd": "${workspaceFolder}/app"
+    },
+    {
+      "name": "Playwright: All Tests",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run test:e2e",
+      "cwd": "${workspaceFolder}/app"
+    }
+  ]
+}
