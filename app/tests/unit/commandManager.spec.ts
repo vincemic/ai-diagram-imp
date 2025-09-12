@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { CommandManager, initialState, AddNode, RemoveNode, ReplaceState } from '../../src/core/commands.js';
+import { CommandManager, initialState, AddNode, RemoveNode, ReplaceState, MoveNode } from '../../src/core/commands.js';
 
 describe('CommandManager', () => {
   it('adds a node and undo restores previous state', () => {
@@ -34,5 +34,18 @@ describe('CommandManager', () => {
     expect(mgr.state.nodes.some(n => n.id === 'n1')).toBe(false);
     mgr.undo();
     expect(mgr.state.nodes.some(n => n.id === 'n1')).toBe(true);
+  });
+
+  it('move node updates coordinates and undo restores previous', () => {
+    const mgr = new CommandManager(initialState);
+    mgr.dispatch(new AddNode({ id: 'n1', x: 10, y: 20 }));
+    mgr.dispatch(new MoveNode('n1', 200, 300));
+    const moved = mgr.state.nodes.find(n => n.id === 'n1');
+    expect(moved?.x).toBe(200);
+    expect(moved?.y).toBe(300);
+    mgr.undo();
+    const original = mgr.state.nodes.find(n => n.id === 'n1');
+    expect(original?.x).toBe(10);
+    expect(original?.y).toBe(20);
   });
 });

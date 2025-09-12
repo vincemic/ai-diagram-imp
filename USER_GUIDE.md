@@ -45,10 +45,10 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 
 ## 4. Creating & Editing Diagrams
 
-Currently interactions are minimal:
+Current interactions:
 
 - Click **Add Node** to append a new node at a default position (x=100, y=80) labelled with its `type` (default "start").
-- Nodes are static (no drag/resize in this prototype).
+- Drag a node: press and hold on the node rectangle, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y`.
 - Use **New** to reset to a blank diagram (title set to "Untitled Diagram").
 
 ## 5. Importing JSON
@@ -142,14 +142,15 @@ Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log
 
 ## 12. Known Limitations
 
-- No node selection, dragging, resizing, or edge rendering yet.
+- No node selection highlight or multi-select yet (drag works but does not indicate selection state).
+- No resizing or edge rendering yet.
 - No persistence beyond manual export/import (in‑memory only).
 - Single theme; dark only.
 - No accessibility pass beyond basic landmarks and button semantics.
 
 ## 13. Roadmap Ideas (Non-binding)
 
-- Draggable selectable nodes & bounding boxes.
+- Selection visuals & multi-select drag.
 - Edge creation and routing with arrows.
 - Zoom & pan controls.
 - Multiple themes & light mode.

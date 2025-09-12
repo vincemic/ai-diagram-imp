@@ -120,6 +120,27 @@ export class RemoveNode implements Command {
   }
 }
 
+export class MoveNode implements Command {
+  name = 'moveNode';
+  private id: string;
+  private x: number;
+  private y: number;
+  constructor(id: string, x: number, y: number) {
+    this.id = id;
+    this.x = x;
+    this.y = y;
+  }
+  execute(state: DiagramState) {
+    const nodes = state.nodes.map(n => n.id === this.id ? { ...n, x: this.x, y: this.y } : n);
+    return { state: { ...state, nodes } };
+  }
+  invert(prev: DiagramState, next: DiagramState) {
+    const prevNode = prev.nodes.find(n => n.id === this.id);
+    if (!prevNode) return undefined;
+    return new MoveNode(this.id, prevNode.x, prevNode.y);
+  }
+}
+
 export class ReplaceState implements Command {
   name = 'replaceState';
   private nextState: DiagramState;
