@@ -38,7 +38,7 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 
 | Area | Description |
 |------|-------------|
-| Toolbar (top) | Buttons for New, Import, Add Node, Export JSON, Export JPEG, Undo, Redo. |
+| Toolbar (top) | Left hamburger menu (New, Import, Add Node, Export JSON/PNG/JPEG) plus inline Undo / Redo buttons and app title. |
 | Sidebar (left) | Sliding Properties panel (overlays diagram when open; when no node is selected it is fully hidden and the canvas uses the full width). |
 | Canvas (center) | Large scrollable area containing the diagram SVG and nodes. |
 | Splash Screen | (Production or forced) Brief logo screen at launch, fades out automatically. |
@@ -47,7 +47,7 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 
 Current interactions:
 
-- Click **Add Node** to append a new node at a default position (x=100, y=80) labelled with its `type` (default "start").
+- Open the hamburger menu (top-left ☰) then click **Add Node** to append a new node at a default position (x=100, y=80) labelled with its `type` (default "start").
 - **Select a node** by clicking it; selection highlight appears (accent stroke). Click empty canvas to clear selection and hide the property pane.
 - **Edit properties**: With a node selected, the sidebar shows a pane where you can modify:
   - Text label (stored in `node.data.text`; falls back to `type` if empty)
@@ -55,11 +55,11 @@ Current interactions:
   - Text color / background color
     - Defaults for newly added nodes: text color `#000000` (black), background color `#ADD8E6` (light blue)
 - Drag a node: press and hold on the node shape, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y` and any updated `data` fields.
-- Use **New** to reset to a blank diagram (title set to "Untitled Diagram").
+- Use **New** (inside the hamburger menu) to reset to a blank diagram (title set to "Untitled Diagram").
 
 ## 5. Importing JSON
 
-1. Click **Import**.
+1. Open the hamburger menu and click **Import**.
 2. Select a `.json` file matching the diagram schema (see Section 10).
 3. On success, the diagram state replaces the current one. On failure, an alert appears and validation errors are logged to the browser console.
 
@@ -67,11 +67,11 @@ Current interactions:
 
 ### 6.1 Export JSON
 
-- Click **Export JSON** to download the current state as `<title>.json`.
+- Open the hamburger menu and click **Export JSON** to download the current state as `<title>.json`.
 
 ### 6.2 Export JPEG
 
-- Click **Export JPEG** to rasterize the current visible SVG region into a JPEG file. A white background is added automatically; device pixel ratio is respected for higher DPI.
+- Open the hamburger menu and click **Export JPEG** to rasterize the current visible SVG region into a JPEG file. A white background is added automatically; device pixel ratio is respected for higher DPI.
 - File name defaults to `<title>.jpg`.
 
 ## 7. Undo / Redo

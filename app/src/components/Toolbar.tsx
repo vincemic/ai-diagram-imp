@@ -4,6 +4,7 @@ import { ReplaceState, AddNode } from '../core/commands.js';
 import { validateDiagram } from '../model/validateDiagram.js';
 import { exportCurrentViewAsJPEG, exportCurrentViewAsPNG } from '../core/exportJPEG.js';
 import { updatePreferences } from '../core/preferences.js';
+import { HamburgerMenu } from './HamburgerMenu.js';
 
 export const Toolbar: React.FC = () => {
   const dispatch = useDiagramStore(selectDispatch);
@@ -93,15 +94,22 @@ export const Toolbar: React.FC = () => {
 
   return (
     <div className="toolbar" data-testid="toolbar">
-      <button type="button" onClick={handleNew}>New</button>
-  <button type="button" onClick={handleImportClick}>Import</button>
-  <button type="button" onClick={handleAddNode}>Add Node</button>
-  <button type="button" onClick={handleExportJSON}>Export JSON</button>
-  <button type="button" onClick={handleExportPNG}>Export PNG</button>
-  <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
-  <span className="toolbar-spacer" />
-      <button type="button" onClick={() => { undo(); }}>Undo</button>
-      <button type="button" onClick={() => { redo(); }}>Redo</button>
+      <HamburgerMenu>
+        <button type="button" onClick={handleNew}>New</button>
+        <button type="button" onClick={handleImportClick}>Import</button>
+        <button type="button" onClick={handleExportJSON}>Export JSON</button>
+        <button type="button" onClick={handleExportPNG}>Export PNG</button>
+        <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
+      </HamburgerMenu>
+      <button type="button" onClick={handleAddNode}
+        className="toolbar-new-node"
+        data-testid="add-node-inline"
+      >New Node</button>
+      <span className="toolbar-spacer" />
+      <div className="toolbar-inline-actions">
+        <button type="button" onClick={() => { undo(); }}>Undo</button>
+        <button type="button" onClick={() => { redo(); }}>Redo</button>
+      </div>
     </div>
   );
 };
