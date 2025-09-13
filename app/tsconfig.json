@@ -17,6 +17,6 @@
     "jsx": "react-jsx"
   },
   "include": ["src", "playwright.config.ts", "tests"],
-  "types": ["node", "@types/node"],
+  "types": ["node", "@types/node", "vitest"],
   "references": []
 }

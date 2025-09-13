@@ -9,10 +9,12 @@ function parseTransform(transform: string | null): { x: number; y: number } | nu
 
 test.describe('Drag Move', () => {
   test('dragging a node updates its position', async ({ page }) => {
-    await page.goto('/');
+  await page.addInitScript(() => { try { localStorage.setItem('diagramimp.skipSplash','1'); } catch {} });
+  await page.goto('/');
     await page.getByRole('button', { name: 'New' }).click();
     await page.getByRole('button', { name: 'Add Node' }).click();
     const node = page.locator('svg.diagram g[data-layer="nodes"] > g').first();
+    await page.waitForFunction(() => document.querySelector('svg.diagram g[data-layer="nodes"] > g'));
     await expect(node).toBeVisible();
     const startTransform = await node.getAttribute('transform');
     const start = parseTransform(startTransform);
@@ -23,15 +25,21 @@ test.describe('Drag Move', () => {
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 150, box.y + box.height / 2 + 120, { steps: 10 });
-    await page.mouse.up();
-    // Wait a moment for state updates
-    await page.waitForTimeout(50);
-    const endTransform = await node.getAttribute('transform');
-    const end = parseTransform(endTransform);
-    expect(end).not.toBeNull();
-    if (start && end) {
-      expect(Math.round(end.x)).toBeGreaterThan(Math.round(start.x));
-      expect(Math.round(end.y)).toBeGreaterThan(Math.round(start.y));
+  await page.mouse.up();
+    // Poll for transform change via evaluate loop
+    let endVal: { x: number; y: number } | null = null;
+    for (let i = 0; i < 20; i++) {
+      const current = await node.getAttribute('transform');
+      const parsed = parseTransform(current);
+      if (start && parsed && (Math.round(parsed.x) !== Math.round(start.x) || Math.round(parsed.y) !== Math.round(start.y))) {
+        endVal = parsed; break;
+      }
+      await page.waitForTimeout(50);
+    }
+    expect(endVal).not.toBeNull();
+    if (start && endVal) {
+      expect(Math.round(endVal.x)).toBeGreaterThan(Math.round(start.x));
+      expect(Math.round(endVal.y)).toBeGreaterThan(Math.round(start.y));
     }
   });
 });

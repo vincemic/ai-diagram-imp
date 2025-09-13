@@ -1,0 +1,3 @@
+The actual logo lives at repository root as 'diagramimp .png'.
+We import it via relative path from the app using an ES module import with ?url if needed.
+Optionally copy/optimize in future.

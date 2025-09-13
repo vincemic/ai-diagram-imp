@@ -58,7 +58,12 @@ body { background: var(--color-bg); color: var(--color-text); }
 .toolbar { position: sticky; top: 0; z-index: 10; display: flex; gap: 8px; align-items: center; height: var(--toolbar-height); padding: 0 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
 /* Workspace fills remaining space under toolbar */
 .workspace { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-.sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); padding: 12px; box-sizing: border-box; overflow: auto; }
+.sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); padding: 12px; box-sizing: border-box; overflow: hidden; position: relative; }
+/* Property pane slide behavior */
+.sidebar .property-pane-wrapper { position: relative; }
+.property-pane-slide-container { position: relative; }
+.property-pane-shell { transform: translateX(0); transition: transform 220ms ease-in-out, opacity 220ms ease-in-out; opacity: 1; will-change: transform, opacity; }
+.property-pane-shell.is-hidden { transform: translateX(8px); opacity: 0; pointer-events: none; }
 /* Only the diagram canvas scrolls; allow large diagrams */
 .diagram-canvas { flex: 1; position: relative; overflow: auto; }
 /* The SVG should size to content; prevent forced stretch so scroll works */
@@ -69,7 +74,7 @@ button:hover { background: var(--color-accent); border-color: var(--color-accent
 
 .diagram { background: #20252b; }
 .node-rect { stroke: #4b5a69; stroke-width: 1; }
-.node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; }
+.node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; pointer-events: none; }
 .node.selected .node-rect { stroke: var(--color-accent); stroke-width: 2; }
 
 /* Dynamic per-node colors via data attributes (fallback to CSS vars not widely supported with attr()) */

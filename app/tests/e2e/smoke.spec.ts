@@ -5,7 +5,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('App Smoke', () => {
   test('loads toolbar and canvas', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.addInitScript(() => { try { localStorage.setItem('diagramimp.skipSplash','1'); } catch {} });
+    await page.goto('/');
     await expect(page.getByRole('button', { name: 'New' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Import' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Export JSON' })).toBeVisible();

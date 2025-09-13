@@ -1,11 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 test('export PNG creates downloadable file', async ({ page }) => {
+  await page.addInitScript(() => { try { localStorage.setItem('diagramimp.skipSplash','1'); } catch {} });
   await page.goto('/');
   // Add a node so there is visible content
   await page.getByRole('button', { name: 'Add Node' }).click();
-  const title = await page.title();
-  const expectedFile = (title || 'diagram') + '.png';
+  // Filename derives from diagram metadata.title, which starts as 'Untitled Diagram'
+  const expectedFile = 'Untitled Diagram.png';
   // Intercept the download by listening for a navigation to blob url after clicking
   const [ download ] = await Promise.all([
     page.waitForEvent('download'),

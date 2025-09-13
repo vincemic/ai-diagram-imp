@@ -3,20 +3,22 @@ import { test, expect } from '@playwright/test';
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     // Skip splash
-    await page.addInitScript(() => { localStorage.setItem('diagramimp.skipSplash', 'true'); });
+  await page.addInitScript(() => { localStorage.setItem('diagramimp.skipSplash', '1'); });
     await page.goto('/');
   });
 
   test('Tab cycles selection and Delete removes node', async ({ page }) => {
-    // Add three nodes
-    const addBtn = page.getByRole('button', { name: /add node/i });
+  // Add three nodes and wait for them to render
+  const addBtn = page.getByRole('button', { name: /add node/i });
+  for (let i = 0; i < 3; i++) {
     await addBtn.click();
-    await addBtn.click();
-    await addBtn.click();
+  }
+  await page.waitForFunction(() => document.querySelectorAll('g.node').length >= 3);
 
     // Initial: no selection, press Tab -> first node selected
     await page.keyboard.press('Tab');
     const nodes = page.locator('g.node');
+    await expect(nodes).toHaveCount(3);
     await expect(nodes.first()).toHaveClass(/selected/);
 
     // Tab again -> second node selected

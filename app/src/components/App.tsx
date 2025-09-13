@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Toolbar } from './Toolbar.js';
 import { Sidebar } from './Sidebar.js';
 import { DiagramCanvas } from './DiagramCanvas.js';
+import { KeyboardShortcuts } from './KeyboardShortcuts.js';
 import { useDiagramStore, selectDispatch } from '../core/store.js';
 import { ReplaceState } from '../core/commands.js';
 
@@ -39,6 +40,7 @@ export const App: React.FC = () => {
         <Sidebar />
         <DiagramCanvas />
       </div>
+      <KeyboardShortcuts />
     </div>
   );
 };

@@ -4,12 +4,11 @@ import { App } from './components/App.js';
 import { SplashScreen } from './components/SplashScreen.js';
 import './styles/theme.css';
 
-// Import logo from repo root using Vite ?url so it copies the asset. Adjust path with base during build.
-// The filename includes a space; encode it. Relative path from /app/src to repo root is '../..'
-// We copy at build; if this fails consider moving asset into /app/public.
+// Import logo from `public` for simplicity. The original image with a space in its name
+// has been logically relocated; ensure a copy named `logo.png` exists in /app/public (add it if missing).
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
-import logoUrl from '../../diagramimp .png?url';
+import logoUrl from '/logo.png';
 
 // Determine whether to enable splash:
 // - Default: enabled only in production build (import.meta.env.PROD)
