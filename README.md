@@ -1,6 +1,6 @@
 # ai-diagram-imp
 
-![AI Diagram Imp logo: stylized gradient imp-shaped polygon with IMP text](./logo.svg)
+<img src="./logo.png" alt="AI Diagram Imp Logo" width="140" />
 
 AI Diagram Imp web-based diagram generator scaffold (architecture docs, React+Vite app, command pattern, testing setup).
 
