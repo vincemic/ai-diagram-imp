@@ -96,7 +96,12 @@ export class AddNode implements Command {
       y: node.y ?? 0,
       w: node.w ?? 160,
       h: node.h ?? 60,
-      data: node.data ?? {}
+      data: (() => {
+        const data = { ...(node.data || {}) } as Record<string, unknown>;
+        if (data.textColor === undefined) data.textColor = '#000000';
+        if (data.backgroundColor === undefined) data.backgroundColor = '#ADD8E6';
+        return data;
+      })()
     };
   }
   execute(state: DiagramState) {

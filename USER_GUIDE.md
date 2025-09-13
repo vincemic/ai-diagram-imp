@@ -53,6 +53,7 @@ Current interactions:
   - Text label (stored in `node.data.text`; falls back to `type` if empty)
   - Shape (rectangle, rounded, ellipse)
   - Text color / background color
+    - Defaults for newly added nodes: text color `#000000` (black), background color `#ADD8E6` (light blue)
 - Drag a node: press and hold on the node shape, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y` and any updated `data` fields.
 - Use **New** to reset to a blank diagram (title set to "Untitled Diagram").
 

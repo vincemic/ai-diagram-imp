@@ -53,11 +53,11 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
             <legend>Colors</legend>
             <label>
               Text Color
-              <input data-testid="prop-text-color" type="color" value={data.textColor || '#e0e6ed'} onChange={e => update({ textColor: e.target.value })} />
+              <input data-testid="prop-text-color" type="color" value={data.textColor || '#000000'} onChange={e => update({ textColor: e.target.value })} />
             </label>
             <label>
               Background Color
-              <input data-testid="prop-bg-color" type="color" value={data.backgroundColor || '#2e3742'} onChange={e => update({ backgroundColor: e.target.value })} />
+              <input data-testid="prop-bg-color" type="color" value={data.backgroundColor || '#ADD8E6'} onChange={e => update({ backgroundColor: e.target.value })} />
             </label>
           </fieldset>
         </>

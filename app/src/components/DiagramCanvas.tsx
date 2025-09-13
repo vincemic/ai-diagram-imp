@@ -91,7 +91,7 @@ export const DiagramCanvas: React.FC = () => {
                 ) : (
                   <rect width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
                 )}
-                <text className="node-label" x={n.w / 2} y={n.h / 2} fill={textFill || undefined}>{String(data.text || n.type)}</text>
+                <text className="node-label" x={n.w / 2} y={n.h / 2} fill={textFill || undefined} pointerEvents="none">{String(data.text || n.type)}</text>
               </g>
             );
           })}
