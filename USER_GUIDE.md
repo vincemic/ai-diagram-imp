@@ -6,7 +6,7 @@
 
 AI Diagram Imp is a lightweight, early-stage web application for experimenting with diagram creation. It demonstrates a command-based state manager, schema validation, export features, automated screenshots, and testing scaffolding.
 
-Current focus: simple rectangular nodes rendered on an SVG canvas. (Edges are part of the schema but not yet visually rendered.)
+Current focus: simple nodes rendered on an SVG canvas. (Edges are part of the schema but not yet visually rendered.) Supported shapes: rectangle, rounded rectangle, square, ellipse/circle, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder (pseudo), star.
 
 ## 2. Quick Start
 
@@ -73,6 +73,46 @@ Current interactions:
 
 - Open the hamburger menu and click **Export JPEG** to rasterize the current visible SVG region into a JPEG file. A white background is added automatically; device pixel ratio is respected for higher DPI.
 - File name defaults to `<title>.jpg`.
+
+### 6.3 GraphML (Beta)
+
+Two actions are available in the hamburger menu (labeled *Beta*):
+
+- **Export GraphML (Beta)**: Downloads a `.graphml` file representing the current diagram (nodes, edges, geometry, basic colors, stroke + shape metadata, plus extra node data as JSON). Selection state and undo history are excluded.
+- **Import GraphML (Beta)**: Loads a `.graphml` file produced by this app (or a compatible external tool) and replaces the current diagram.
+
+Recent Phase 3 additions:
+
+- Canonical shape persistence (rect, diamond, ellipse, circle, hexagon; others downgrade to `rect`).
+- Optional node `strokeColor` & `strokeWidth` round-trip with validation.
+- Export option (developer flag) `omitDefaultShape` to suppress `shape=rect` entries for leaner files. When omitted, importer warns and defaults to `rect`.
+- Basic color validation for strokeColor (simple hex or name). Invalid colors are ignored with warnings.
+- Warning statistics (not surfaced in UI yet) track counts for invalid stroke colors, widths, missing shapes, unknown node keys, vendor namespaces.
+
+Limitations (Beta):
+
+- Directed edges only; edge visuals not rendered yet.
+- Grouping / nested graphs unsupported and skipped.
+- Vendor (yFiles/yWorks) extensions detected but ignored (future roadmap); any `<y:*>` blocks are not parsed.
+- Non-canonical shapes (e.g. triangle, star) currently exported as provided but *if imported* and not in canonical set they downgrade to `rect` with a warning.
+- Edge styling & labels not yet supported.
+
+Exported Node Keys (subset):
+
+- Geometry: x, y, w, h
+- Type: type
+- Colors: backgroundColor, textColor
+- Shape: shape (unless omitted via `omitDefaultShape` and equal to `rect`)
+- Stroke: strokeColor, strokeWidth (> 0 only)
+- Extra data: remaining custom fields serialized once under the `data` key.
+
+Developer Option (omit default shape):
+
+- Used by passing `{ omitDefaultShape: true }` to the internal `toGraphML` API. UI export currently always includes shape for clarity.
+
+Sample file: `examples/graphml/simple.graphml`.
+
+If import shows "Imported with warnings", open DevTools Console to inspect ignored or downgraded items (messages list unknown keys, invalid colors, etc.).
 
 ## 7. Undo / Redo
 
@@ -153,6 +193,7 @@ Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log
 | Enter / F2 | Focus text field in property pane for quick edit |
 
 ### Focus Trap
+
 When the properties panel is open and focus is inside it, `Tab` / `Shift+Tab` cycles only through the interactive fields within the panel (focus trap). Press `Esc` to exit (deselect) and return to canvas/node navigation; subsequent `Tab` resumes global node cycling.
 
 ## 12. Known Limitations

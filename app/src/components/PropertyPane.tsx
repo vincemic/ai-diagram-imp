@@ -12,13 +12,17 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
   const node = state.nodes.find(n => n.id === selectedId);
   const data = (node?.data || {}) as any;
 
-  const update = useCallback((changes: { type?: string; text?: string; textColor?: string; backgroundColor?: string; shape?: string; }) => {
+  const update = useCallback((changes: { type?: string; text?: string; textColor?: string; backgroundColor?: string; shape?: string; strokeColor?: string; strokeWidth?: number; }) => {
     if (!node) return;
     const newData: Record<string, unknown> = { ...data };
     if (changes.text !== undefined) newData.text = changes.text;
     if (changes.textColor !== undefined) newData.textColor = changes.textColor;
     if (changes.backgroundColor !== undefined) newData.backgroundColor = changes.backgroundColor;
     if (changes.shape !== undefined) newData.shape = changes.shape;
+    if (changes.strokeColor !== undefined) newData.strokeColor = changes.strokeColor;
+    if (changes.strokeWidth !== undefined) {
+      if (typeof changes.strokeWidth === 'number' && changes.strokeWidth > 0) newData.strokeWidth = changes.strokeWidth; else delete (newData as any).strokeWidth;
+    }
     const typeChange = changes.type ? { type: changes.type } : {};
     dispatch(new UpdateNodeProps({ id: node.id, changes: { ...typeChange, data: newData } }));
   }, [dispatch, node, data]);
@@ -55,7 +59,7 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
   }, [active, node]);
 
   return (
-  <div ref={containerRef} className="property-pane" data-testid="property-pane" aria-hidden={(!active || !node)}>
+  <div ref={containerRef} className="property-pane" data-testid="property-pane" aria-hidden={(!active || !node) ? 'true' : 'false'}>
       {node && (
         <>
           <fieldset>
@@ -98,6 +102,17 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
             <label>
               Background Color
               <input data-testid="prop-bg-color" type="color" value={data.backgroundColor || '#ADD8E6'} onChange={e => update({ backgroundColor: e.target.value })} />
+            </label>
+            <label>
+              Stroke Color
+              <input data-testid="prop-stroke-color" type="color" value={data.strokeColor || '#000000'} onChange={e => update({ strokeColor: e.target.value })} />
+            </label>
+            <label>
+              Stroke Width
+              <input data-testid="prop-stroke-width" type="number" min={0} step={0.5} value={data.strokeWidth !== undefined ? data.strokeWidth : ''} placeholder="(auto)" onChange={e => {
+                const v = e.target.value;
+                update({ strokeWidth: v === '' ? undefined : Number(v) });
+              }} />
             </label>
           </fieldset>
         </>

@@ -27,6 +27,30 @@ export const GRAPHML_KEYS = {
 export interface GraphMLImportResult {
   diagram: DiagramState;
   warnings: string[];
+  stats?: {
+    invalidStrokeColors?: number;
+    invalidStrokeWidths?: number;
+    missingShape?: number;
+    unknownNodeKeys?: number;
+    vendorNamespaces?: string[];
+  };
+}
+
+// Canonical shape names list (extendable)
+export const CANONICAL_SHAPES = [
+  'rect',
+  'diamond',
+  'ellipse',
+  'circle',
+  'hexagon'
+] as const;
+const SHAPE_SET = new Set<string>(CANONICAL_SHAPES as readonly string[]);
+
+// Basic permissive CSS color validation (hex or simple named)
+const COLOR_REGEX = /^(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)$/;
+
+export interface ToGraphMLOptions {
+  omitDefaultShape?: boolean; // when true, omit d_shape if shape === 'rect'
 }
 
 // Escapes text for XML element content.
@@ -40,7 +64,7 @@ function esc(value: unknown): string {
 }
 
 // Phase 1: Export MVP implementation.
-export function toGraphML(diagram: DiagramState): string {
+export function toGraphML(diagram: DiagramState, opts: ToGraphMLOptions = {}): string {
   const k = GRAPHML_KEYS;
   // Sort for deterministic output (test stability)
   const nodes = [...diagram.nodes].sort((a, b) => a.id.localeCompare(b.id));
@@ -70,7 +94,8 @@ export function toGraphML(diagram: DiagramState): string {
   const nodeXml = nodes.map(n => {
     const bg = (n.data as any)?.backgroundColor;
     const tc = (n.data as any)?.textColor;
-    const shape = (n.data as any)?.shape || 'rect';
+    let shape = (n.data as any)?.shape || 'rect';
+    if (!SHAPE_SET.has(shape)) shape = 'rect';
     const strokeColor = (n.data as any)?.strokeColor;
     let strokeWidth = (n.data as any)?.strokeWidth;
     if (typeof strokeWidth !== 'number' || strokeWidth <= 0) strokeWidth = undefined;
@@ -88,7 +113,7 @@ export function toGraphML(diagram: DiagramState): string {
       `<data key="${k.node.y}">${n.y}</data>` +
       `<data key="${k.node.w}">${n.w}</data>` +
       `<data key="${k.node.h}">${n.h}</data>` +
-      `<data key="${k.node.shape}">${esc(shape)}</data>` +
+      (!opts.omitDefaultShape || shape !== 'rect' ? `<data key="${k.node.shape}">${esc(shape)}</data>` : '') +
       (bg ? `<data key="${k.node.backgroundColor}">${esc(bg)}</data>` : '') +
       (tc ? `<data key="${k.node.textColor}">${esc(tc)}</data>` : '') +
       (strokeColor ? `<data key="${k.node.strokeColor}">${esc(strokeColor)}</data>` : '') +
@@ -118,6 +143,7 @@ export function toGraphML(diagram: DiagramState): string {
 // Phase 2 placeholder: will parse XML and build DiagramState.
 export function fromGraphML(xml: string): GraphMLImportResult {
   const warnings: string[] = [];
+  const stats: GraphMLImportResult['stats'] = { invalidStrokeColors: 0, invalidStrokeWidths: 0, missingShape: 0, unknownNodeKeys: 0, vendorNamespaces: [] };
   if (typeof window === 'undefined' || typeof (window as any).DOMParser === 'undefined') {
     throw new Error('fromGraphML requires DOMParser (browser environment)');
   }
@@ -130,6 +156,16 @@ export function fromGraphML(xml: string): GraphMLImportResult {
   // Detect parser errors
   if (doc.getElementsByTagName('parsererror').length > 0) {
     throw new Error('XML parse error');
+  }
+  // Vendor namespace detection (stored, not acted on yet)
+  const root = doc.documentElement;
+  if (root && root.attributes) {
+    for (let i = 0; i < root.attributes.length; i++) {
+      const attr = root.attributes[i];
+      if (attr.name.startsWith('xmlns:') && /yworks|yfiles|y:/i.test(attr.value)) {
+        stats.vendorNamespaces!.push(attr.value);
+      }
+    }
   }
   const k = GRAPHML_KEYS;
   const graph = doc.getElementsByTagName('graph')[0];
@@ -179,7 +215,9 @@ export function fromGraphML(xml: string): GraphMLImportResult {
           if (!isNaN(num) && num > 0) strokeWidth = num; else warnings.push(`Invalid strokeWidth on node ${id} ignored`);
           break;
         }
-        default: warnings.push(`Unknown node data key ${key}`); break;
+        default:
+          stats.unknownNodeKeys = (stats.unknownNodeKeys || 0) + 1;
+          warnings.push(`Unknown node data key ${key}`); break;
       }
     }
     if (type === undefined || x === undefined || y === undefined || w === undefined || h === undefined) {
@@ -188,9 +226,20 @@ export function fromGraphML(xml: string): GraphMLImportResult {
     }
     if (bg) nodeData.backgroundColor = bg;
     if (tc) nodeData.textColor = tc;
-    if (!shape) { shape = 'rect'; warnings.push('Missing shape defaulted to rect'); }
+    if (!shape) { shape = 'rect'; warnings.push('Missing shape defaulted to rect'); stats.missingShape = (stats.missingShape || 0) + 1; }
+    if (!SHAPE_SET.has(shape)) {
+      warnings.push(`Unknown shape '${shape}' downgraded to rect`);
+      shape = 'rect';
+    }
     nodeData.shape = shape;
-    if (strokeColor) nodeData.strokeColor = strokeColor;
+    if (strokeColor) {
+      if (COLOR_REGEX.test(strokeColor)) {
+        nodeData.strokeColor = strokeColor;
+      } else {
+        warnings.push(`Invalid strokeColor '${strokeColor}' on node ${id} ignored`);
+        stats.invalidStrokeColors = (stats.invalidStrokeColors || 0) + 1;
+      }
+    }
     if (strokeWidth !== undefined) nodeData.strokeWidth = strokeWidth;
     if (extraJson) {
       try {
@@ -231,7 +280,7 @@ export function fromGraphML(xml: string): GraphMLImportResult {
     selection: []
   };
 
-  return { diagram, warnings };
+  return { diagram, warnings, stats };
 }
 
 // Convenience helper for tests (round-trip invariant once import implemented)
