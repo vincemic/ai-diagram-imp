@@ -1,30 +1,29 @@
 import { test, expect } from '@playwright/test';
 
-// Assumes a default diagram loads with at least one node or user can add one via UI.
-// We will add a node using the toolbar button if necessary.
-
 test('property pane shows fallback text equal to node type when text undefined', async ({ page }) => {
-  // Skip splash
-  await page.addInitScript(() => {
-    localStorage.setItem('diagramimp.skipSplash', 'true');
+  page.on('console', msg => {
+    // eslint-disable-next-line no-console
+    console.log('[page]', msg.type(), msg.text());
   });
-  await page.goto('/');
+  await page.addInitScript(() => { localStorage.setItem('diagramimp.skipSplash', '1'); });
+  await page.goto('/?t=' + Date.now());
 
-  // If there is an Add Node button (depends on UI), click it to create a fresh node
   const addButton = page.getByRole('button', { name: /add node/i });
-  if (await addButton.isVisible()) {
-    await addButton.click();
-  }
+  await addButton.click();
+  await page.waitForFunction(() => document.querySelector('[data-layer="nodes"] g[data-node-id]'));
+  const node = page.locator('[data-layer="nodes"] g[data-node-id]').last();
+  await expect(node).toBeVisible();
+  await node.locator('.node-rect').first().click();
+  await page.waitForSelector('aside[data-selection-count="1"]', { timeout: 8000 });
+  await page.waitForSelector('[data-layer="nodes"] g[data-node-id][data-node-selected="true"]', { timeout: 8000 });
 
-  // Click the last node rendered (simplest: select any svg node group)
-  const node = page.locator('svg [data-diagram-node]').last();
-  await node.click();
-
+  const shell = page.getByTestId('property-pane-shell');
+  await expect(shell).toHaveAttribute('data-pane-active', '1');
   const pane = page.getByTestId('property-pane');
   await expect(pane).toBeVisible();
 
-  const textInput = pane.getByLabel('Text');
+  const textInput = pane.getByTestId('prop-text');
   const value = await textInput.inputValue();
-  // Expect non-empty (should show the type fallback like 'start')
-  expect(value).not.toEqual('');
+  // Fallback should equal node type 'start' initially when no explicit text set
+  expect(value).toEqual('start');
 });

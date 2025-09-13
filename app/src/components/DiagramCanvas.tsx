@@ -84,6 +84,7 @@ export const DiagramCanvas: React.FC = () => {
                 onFocus={() => { if (!isSelected(n.id)) dispatch(new SetSelection([n.id])); }}
                 data-node-bg={fill || undefined}
                 data-node-text={textFill || undefined}
+                data-node-selected={isSelected(n.id) ? 'true' : undefined}
               >
                 {isEllipse ? (
                   <ellipse cx={n.w/2} cy={n.h/2} rx={n.w/2} ry={n.h/2} className="node-rect" fill={fill || undefined} />
