@@ -5,7 +5,7 @@ import { DiagramState } from '../../core/commands.js';
 describe('GraphML shape & stroke extensions', () => {
   function baseState(): DiagramState {
     return {
-      schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
       metadata: { title: 'Test' },
       nodes: [
         { id: 'n1', type: 'process', x: 10, y: 20, w: 160, h: 60, data: { backgroundColor: '#fff', textColor: '#000', shape: 'rect' } },
@@ -46,7 +46,7 @@ describe('GraphML shape & stroke extensions', () => {
 
   it('ignores invalid stroke width (no emission, no warning)', () => {
     const badXml = toGraphML({
-      schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
       metadata: { title: 'Bad' },
       nodes: [ { id: 'n1', type: 'process', x: 0, y: 0, w: 10, h: 10, data: { shape: 'rect', strokeWidth: -5 } } ],
       edges: [],
@@ -60,7 +60,7 @@ describe('GraphML shape & stroke extensions', () => {
 
   it('defaults missing shape to rect', () => {
     const xmlNoShape = toGraphML({
-      schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
       metadata: { title: 'NoShape' },
       nodes: [ { id: 'n1', type: 'process', x: 0, y: 0, w: 10, h: 10, data: { backgroundColor: '#fff' } } ],
       edges: [],

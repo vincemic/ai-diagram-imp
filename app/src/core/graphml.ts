@@ -20,7 +20,17 @@ export const GRAPHML_KEYS = {
     strokeWidth: 'd_sw'
   },
   edge: {
-    type: 'd_edgeType'
+    type: 'd_edgeType',
+    strokeColor: 'd_edgeStrokeColor',
+    strokeWidth: 'd_edgeStrokeWidth',
+    lineStyle: 'd_edgeLineStyle',
+    dashPattern: 'd_edgeDashPattern',
+    arrowSource: 'd_edgeArrowSource',
+    arrowTarget: 'd_edgeArrowTarget',
+    label: 'd_edgeLabel',
+    routing: 'd_edgeRouting',
+    bendPoints: 'd_edgeBendPoints',
+    data: 'd_edgeData'
   }
 } as const;
 
@@ -84,7 +94,17 @@ export function toGraphML(diagram: DiagramState, opts: ToGraphMLOptions = {}): s
     { id: k.node.shape, for: 'node', name: 'shape', type: 'string' },
     { id: k.node.strokeColor, for: 'node', name: 'strokeColor', type: 'string' },
     { id: k.node.strokeWidth, for: 'node', name: 'strokeWidth', type: 'double' },
-    { id: k.edge.type, for: 'edge', name: 'type', type: 'string' }
+    { id: k.edge.type, for: 'edge', name: 'type', type: 'string' },
+    { id: k.edge.strokeColor, for: 'edge', name: 'strokeColor', type: 'string' },
+    { id: k.edge.strokeWidth, for: 'edge', name: 'strokeWidth', type: 'double' },
+    { id: k.edge.lineStyle, for: 'edge', name: 'lineStyle', type: 'string' },
+    { id: k.edge.dashPattern, for: 'edge', name: 'dashPattern', type: 'string' },
+    { id: k.edge.arrowSource, for: 'edge', name: 'arrowSource', type: 'string' },
+    { id: k.edge.arrowTarget, for: 'edge', name: 'arrowTarget', type: 'string' },
+    { id: k.edge.label, for: 'edge', name: 'label', type: 'string' },
+    { id: k.edge.routing, for: 'edge', name: 'routing', type: 'string' },
+    { id: k.edge.bendPoints, for: 'edge', name: 'bendPoints', type: 'string' },
+    { id: k.edge.data, for: 'edge', name: 'data', type: 'string' }
   ];
 
   const keyXml = keyDecls
@@ -123,8 +143,33 @@ export function toGraphML(diagram: DiagramState, opts: ToGraphMLOptions = {}): s
   }).join('\n    ');
 
   const edgeXml = edges.map(e => {
+    const d = e.data || {} as any;
+    const lineStyle = d.lineStyle as string | undefined;
+    const dashPattern = d.dashPattern as string | undefined;
+    const arrowSource = d.arrowSource as string | undefined;
+    const arrowTarget = d.arrowTarget as string | undefined;
+    const strokeColor = d.strokeColor as string | undefined;
+    const strokeWidth = typeof d.strokeWidth === 'number' && d.strokeWidth > 0 ? d.strokeWidth : undefined;
+    const label = d.label as string | undefined;
+    const routing = d.routing as string | undefined;
+    const bendPoints = Array.isArray(d.bendPoints) ? d.bendPoints : undefined;
+    // Build extra edge data JSON excluding known keys
+    const known = new Set(['lineStyle','dashPattern','arrowSource','arrowTarget','strokeColor','strokeWidth','label','routing','bendPoints']);
+    const extraEntries: Record<string, unknown> = {};
+    for (const [kEdge, v] of Object.entries(d)) if (!known.has(kEdge)) extraEntries[kEdge] = v;
+    const extraJson = Object.keys(extraEntries).length ? `<data key="${k.edge.data}">${esc(JSON.stringify(extraEntries))}</data>` : '';
     return `<edge id="${esc(e.id)}" source="${esc(e.source.nodeId)}" target="${esc(e.target.nodeId)}">` +
       `<data key="${k.edge.type}">${esc(e.type)}</data>` +
+      (strokeColor ? `<data key="${k.edge.strokeColor}">${esc(strokeColor)}</data>` : '') +
+      (strokeWidth !== undefined ? `<data key="${k.edge.strokeWidth}">${strokeWidth}</data>` : '') +
+      (lineStyle ? `<data key="${k.edge.lineStyle}">${esc(lineStyle)}</data>` : '') +
+      (dashPattern ? `<data key="${k.edge.dashPattern}">${esc(dashPattern)}</data>` : '') +
+      (arrowSource ? `<data key="${k.edge.arrowSource}">${esc(arrowSource)}</data>` : '') +
+      (arrowTarget ? `<data key="${k.edge.arrowTarget}">${esc(arrowTarget)}</data>` : '') +
+      (label ? `<data key="${k.edge.label}">${esc(label)}</data>` : '') +
+      (routing ? `<data key="${k.edge.routing}">${esc(routing)}</data>` : '') +
+      (bendPoints ? `<data key="${k.edge.bendPoints}">${esc(JSON.stringify(bendPoints))}</data>` : '') +
+      extraJson +
       `</edge>`;
   }).join('\n    ');
 
@@ -263,12 +308,50 @@ export function fromGraphML(xml: string): GraphMLImportResult {
     const tgt = ee.getAttribute('target');
     if (!id || !src || !tgt) { warnings.push('Edge missing id/source/target skipped'); continue; }
     let type = 'default';
+    const edgeData: Record<string, any> = {};
     const dataElems = ee.getElementsByTagName('data');
     for (let j = 0; j < dataElems.length; j++) {
       const d = dataElems[j];
-      if (d.getAttribute('key') === k.edge.type) type = d.textContent || type;
+      const key = d.getAttribute('key');
+      const text = d.textContent || '';
+      switch (key) {
+        case k.edge.type: type = text || type; break;
+        case k.edge.strokeColor: if (COLOR_REGEX.test(text)) edgeData.strokeColor = text; else warnings.push(`Invalid edge strokeColor on edge ${id}`); break;
+        case k.edge.strokeWidth: {
+          const num = Number(text); if (!isNaN(num) && num > 0) edgeData.strokeWidth = num; else warnings.push(`Invalid edge strokeWidth on edge ${id}`); break;
+        }
+        case k.edge.lineStyle: {
+          if (['solid','dashed','dotted'].includes(text)) edgeData.lineStyle = text; else if (text) warnings.push(`Unknown lineStyle '${text}' on edge ${id}`); break;
+        }
+        case k.edge.dashPattern: if (text) edgeData.dashPattern = text; break;
+        case k.edge.arrowSource: if (['none','standard','circle','diamond','tee'].includes(text)) edgeData.arrowSource = text; else if (text) warnings.push(`Unknown arrowSource '${text}' on edge ${id}`); break;
+        case k.edge.arrowTarget: if (['none','standard','circle','diamond','tee'].includes(text)) edgeData.arrowTarget = text; else if (text) warnings.push(`Unknown arrowTarget '${text}' on edge ${id}`); break;
+        case k.edge.label: if (text) edgeData.label = text; break;
+        case k.edge.routing: if (['straight','orthogonal','spline'].includes(text)) edgeData.routing = text; else if (text) warnings.push(`Unknown routing '${text}' on edge ${id}`); break;
+        case k.edge.bendPoints: {
+          if (text) {
+            try {
+              const arr = JSON.parse(text);
+              if (Array.isArray(arr) && arr.every(p => typeof p.x === 'number' && typeof p.y === 'number')) edgeData.bendPoints = arr; else warnings.push(`Invalid bendPoints on edge ${id}`);
+            } catch { warnings.push(`Failed to parse bendPoints on edge ${id}`); }
+          }
+          break;
+        }
+        case k.edge.data: {
+          if (text) {
+            try {
+              const extra = JSON.parse(text);
+              if (extra && typeof extra === 'object') Object.assign(edgeData, extra);
+            } catch { warnings.push(`Failed to parse extra edge data JSON for edge ${id}`); }
+          }
+          break;
+        }
+        default:
+          // Unknown edge key ignored silently (could accumulate stats later)
+          break;
+      }
     }
-    const edge: DiagramEdge = { id, type, source: { nodeId: src }, target: { nodeId: tgt } };
+    const edge: DiagramEdge = { id, type, source: { nodeId: src }, target: { nodeId: tgt }, data: Object.keys(edgeData).length ? edgeData : undefined };
     edges.push(edge);
   }
 

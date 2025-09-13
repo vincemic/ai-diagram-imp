@@ -36,7 +36,7 @@ export const Toolbar: React.FC = () => {
   }, [undo, redo]);
 
   const handleNew = () => {
-    dispatch(new ReplaceState({ schemaVersion: '1.0.0', nodes: [], edges: [], selection: [], metadata: { title: 'Untitled Diagram' } } as any));
+  dispatch(new ReplaceState({ schemaVersion: '1.1.0', nodes: [], edges: [], selection: [], metadata: { title: 'Untitled Diagram' } } as any));
     updatePreferences(p => ({ ...p, lastOpenedTitle: 'Untitled Diagram' }));
   };
   const handleAddNode = () => {

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <key id="d_title" for="graph" attr.name="title" attr.type="string"/>
+  <key id="d_modelVersion" for="graph" attr.name="modelVersion" attr.type="string"/>
+  <key id="d_type" for="node" attr.name="type" attr.type="string"/>
+  <key id="d_x" for="node" attr.name="x" attr.type="double"/>
+  <key id="d_y" for="node" attr.name="y" attr.type="double"/>
+  <key id="d_w" for="node" attr.name="w" attr.type="double"/>
+  <key id="d_h" for="node" attr.name="h" attr.type="double"/>
+  <key id="d_bg" for="node" attr.name="backgroundColor" attr.type="string"/>
+  <key id="d_tc" for="node" attr.name="textColor" attr.type="string"/>
+  <key id="d_nodeData" for="node" attr.name="data" attr.type="string"/>
+  <key id="d_edgeType" for="edge" attr.name="type" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <data key="d_title">Example Diagram</data>
+    <data key="d_modelVersion">1.0.0</data>
+    <node id="n1"><data key="d_type">process</data><data key="d_x">0</data><data key="d_y">0</data><data key="d_w">160</data><data key="d_h">60</data><data key="d_bg">#ADD8E6</data><data key="d_tc">#000000</data><data key="d_nodeData">{"text":"Start"}</data></node>
+    <node id="n2"><data key="d_type">decision</data><data key="d_x">240</data><data key="d_y">0</data><data key="d_w">160</data><data key="d_h">60</data></node>
+    <edge id="e1" source="n1" target="n2"><data key="d_edgeType">default</data></edge>
+  </graph>
+</graphml>

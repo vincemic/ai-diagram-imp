@@ -60,8 +60,88 @@ export const DiagramCanvas: React.FC = () => {
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
+        <defs>
+          <marker id="arrow-standard" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+          </marker>
+          <marker id="arrow-circle" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <circle cx="5" cy="5" r="4" fill="currentColor" />
+          </marker>
+          <marker id="arrow-diamond" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M5 0 L10 5 L5 10 L0 5 Z" fill="currentColor" />
+          </marker>
+          <marker id="arrow-tee" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M9 0 L9 10 M9 5 L0 5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          </marker>
+        </defs>
         <g data-layer="edges" onPointerDown={handleBackgroundPointerDown}>
           <rect x={0} y={0} width={2000} height={1200} fill="transparent" />
+          {state.edges.map(edge => {
+            const source = state.nodes.find(n => n.id === edge.source.nodeId);
+            const target = state.nodes.find(n => n.id === edge.target.nodeId);
+            if (!source || !target) return null;
+            const data: any = edge.data || {};
+            const sx = source.x + source.w / 2;
+            const sy = source.y + source.h / 2;
+            const tx = target.x + target.w / 2;
+            const ty = target.y + target.h / 2;
+            const bends: { x: number; y: number }[] = Array.isArray(data.bendPoints) ? data.bendPoints : [];
+            const points = [{ x: sx, y: sy }, ...bends, { x: tx, y: ty }];
+            let d = '';
+            if (data.routing === 'orthogonal') {
+              // Simple orthogonal: insert right-angle via midpoint for now
+              if (bends.length === 0) {
+                const midX = sx; const midY = ty; // L shape
+                d = `M ${sx} ${sy} L ${midX} ${sy} L ${midX} ${midY} L ${tx} ${ty}`;
+              } else {
+                d = 'M ' + points.map((p,i) => (i===0?`${p.x} ${p.y}`:`L ${p.x} ${p.y}`)).join(' ');
+              }
+            } else if (data.routing === 'spline') {
+              if (points.length <= 2) {
+                d = `M ${sx} ${sy} L ${tx} ${ty}`;
+              } else {
+                // Basic Catmull-Rom to Bezier conversion for smooth path
+                const toBezier = (pts: {x:number;y:number}[]) => {
+                  if (pts.length < 2) return '';
+                  let path = `M ${pts[0].x} ${pts[0].y}`;
+                  for (let i=0;i<pts.length-1;i++) {
+                    const p0 = pts[i-1] || pts[i];
+                    const p1 = pts[i];
+                    const p2 = pts[i+1];
+                    const p3 = pts[i+2] || p2;
+                    const cp1x = p1.x + (p2.x - p0.x)/6;
+                    const cp1y = p1.y + (p2.y - p0.y)/6;
+                    const cp2x = p2.x - (p3.x - p1.x)/6;
+                    const cp2y = p2.y - (p3.y - p1.y)/6;
+                    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+                  }
+                  return path;
+                };
+                d = toBezier(points);
+              }
+            } else {
+              // straight
+              d = 'M ' + points.map((p,i) => (i===0?`${p.x} ${p.y}`:`L ${p.x} ${p.y}`)).join(' ');
+            }
+            const stroke = data.strokeColor || '#8899aa';
+            const strokeWidth = typeof data.strokeWidth === 'number' ? data.strokeWidth : 1.2;
+            const lineStyle = data.lineStyle as string | undefined;
+            const dashPattern = data.dashPattern as string | undefined;
+            const strokeDasharray = dashPattern ? dashPattern : (lineStyle === 'dashed' ? '6 4' : lineStyle === 'dotted' ? '2 4' : undefined);
+            const markerStart = data.arrowSource && data.arrowSource !== 'none' ? `url(#arrow-${data.arrowSource})` : undefined;
+            const markerEnd = data.arrowTarget && data.arrowTarget !== 'none' ? `url(#arrow-${data.arrowTarget})` : undefined;
+            // midpoint for label (simple: average of all points)
+            const mx = points.reduce((s,p)=>s+p.x,0)/points.length;
+            const my = points.reduce((s,p)=>s+p.y,0)/points.length;
+            return (
+              <g key={edge.id} className="edge" data-edge-id={edge.id}>
+                <path d={d} fill="none" stroke={stroke} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} markerStart={markerStart} markerEnd={markerEnd} />
+                {data.label && (
+                  <text className="edge-label" x={mx} y={my - 4} textAnchor="middle" fontSize={10} fill={stroke}>{String(data.label)}</text>
+                )}
+              </g>
+            );
+          })}
         </g>
         <g data-layer="nodes">
           {state.nodes.map((n) => {

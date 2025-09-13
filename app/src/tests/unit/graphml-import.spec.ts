@@ -1,9 +1,10 @@
 import { toGraphML, fromGraphML } from '../../core/graphml.js';
 import type { DiagramState } from '../../core/commands.js';
+import { test, expect } from 'vitest';
 
 function buildState(): DiagramState {
   return {
-    schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
     metadata: { title: 'RT' },
     selection: [],
     nodes: [

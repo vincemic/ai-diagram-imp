@@ -130,6 +130,11 @@ button:hover { background: var(--color-accent); border-color: var(--color-accent
 .node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; pointer-events: none; }
 .node.selected .node-rect { stroke: var(--color-accent); stroke-width: 2; }
 
+/* Edges */
+.edge path { cursor: pointer; transition: stroke 160ms ease, stroke-width 160ms ease; }
+.edge:hover path { stroke-width: 1.8; }
+.edge-label { pointer-events: none; font-family: system-ui, sans-serif; fill: #ccd5dd; text-shadow: 0 0 2px rgba(0,0,0,0.5); }
+
 /* Dynamic per-node colors via data attributes (fallback to CSS vars not widely supported with attr()) */
 /* Note: dynamic color now applied directly via SVG element fill attributes in React rendering. */
 

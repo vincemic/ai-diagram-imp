@@ -4,7 +4,7 @@ import { DiagramState } from '../../core/commands.js';
 
 describe('GraphML omitDefaultShape option', () => {
   const base: DiagramState = {
-    schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
     metadata: { title: 'ODS' },
     nodes: [
       { id: 'a', type: 't', x: 0, y: 0, w: 10, h: 10, data: { shape: 'rect', text: 'x' } },
@@ -30,7 +30,7 @@ describe('GraphML omitDefaultShape option', () => {
 describe('GraphML invalid stroke color handling', () => {
   it('invalid strokeColor triggers warning and is dropped', () => {
     const state: DiagramState = {
-      schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
       metadata: { title: 'BadColor' },
       nodes: [ { id: 'n1', type: 't', x: 0, y: 0, w: 10, h: 10, data: { shape: 'rect', strokeColor: 'not-a-color', strokeWidth: 2 } } ],
       edges: [],

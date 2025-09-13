@@ -5,7 +5,7 @@ import { DiagramState } from '../core/commands.js';
 // They intentionally keep edges empty until edge rendering is implemented.
 export const examples: Record<string, DiagramState> = {
   'basic-flow': {
-    schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
     metadata: { title: 'Basic Flow' },
     selection: [],
     nodes: [
@@ -16,7 +16,7 @@ export const examples: Record<string, DiagramState> = {
     edges: []
   },
   'architecture': {
-    schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
     metadata: { title: 'Mini Architecture' },
     selection: [],
     nodes: [
@@ -29,7 +29,7 @@ export const examples: Record<string, DiagramState> = {
     edges: []
   },
   'grid': {
-    schemaVersion: '1.0.0',
+  schemaVersion: '1.1.0',
     metadata: { title: 'Grid Layout' },
     selection: [],
     nodes: Array.from({ length: 12 }).map((_, i) => {

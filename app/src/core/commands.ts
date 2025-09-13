@@ -27,10 +27,13 @@ export interface DiagramEdge {
   source: { nodeId: string };
   target: { nodeId: string };
   type: string;
+  data?: Record<string, unknown>;
 }
 
+export const CURRENT_SCHEMA_VERSION = '1.1.0';
+
 export const initialState: DiagramState = {
-  schemaVersion: '1.0.0',
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   nodes: [],
   edges: [],
   selection: [],

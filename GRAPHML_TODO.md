@@ -1,6 +1,6 @@
 # GraphML Integration Roadmap
 
-Status: Draft (Phase 0)
+Status: Draft (Phase 0) – Current schemaVersion: 1.1.0 (bumped from 1.0.0 after edge styling & rendering addition)
 Owner: (assign)
 Last Updated: 2025-09-12
 
@@ -173,9 +173,17 @@ These are not committed for the initial phases but represent logical next steps 
 
 ### 11.3 Edge Rendering & Metadata
 
-- Implement visual edge rendering so imported edges become visible.
-- Support edge labels (store in `edge.data.label`).
-- Parse yFiles edge bends (future: capture as `edge.data.points` array) – currently out-of-scope.
+Status: PARTIAL COMPLETE (2025-09-12)
+
+- [x] Visual edge rendering (straight, orthogonal fallback, spline) implemented in `DiagramCanvas`.
+- [x] Edge styling keys (strokeColor, strokeWidth, lineStyle/dashPattern, arrowSource, arrowTarget, label, routing, bendPoints, extra data) mapped via GraphML export/import.
+- [x] Edge labels rendered (simple centroid positioning).
+- [ ] Interactive edge selection & keyboard navigation.
+- [ ] Edge hover/selection styling differentiation.
+- [ ] Bend point interactive editing (drag handles).
+- [ ] Smarter orthogonal routing (detour avoidance, Manhattan segments).
+- [ ] Improved label placement (path length midpoint + collision avoidance).
+- [ ] Parse vendor (yFiles) edge bends -> `edge.data.bendPoints`.
 
 ### 11.4 Styling Extensions
 
@@ -350,3 +358,84 @@ Short list to guide immediate incremental work after Phase 3 foundation:
 10. Edge rendering MVP so imported edges are visually represented (improves usability validation of round-trips).
 
 (Added 2025-09-12 after completing initial Phase 3 styling keys.)
+
+## 14. Potential Next Enhancements (Edge Styling & Interaction)
+
+These build upon the newly added edge styling and rendering layer.
+
+### 14.1 Edge Interaction & UX
+
+- Add edge hit area: duplicate path with transparent wide stroke for easier pointer targeting.
+- Edge selection state: click to select, shift-click to multi-select, reflect in `selection[]` (prefix `edge:` or maintain separate array).
+- Keyboard deletion & navigation for edges (Tab cycles nodes & edges, arrow keys maybe cycle incident edges).
+- Hover affordances: lighten stroke or show subtle glow; show endpoints/bend handles.
+
+### 14.2 Bend Point Editing
+
+- On selected edge, render draggable circle handles at bend points.
+- Double-click on edge path to insert a new bend point; Delete key while a handle focused removes it.
+- Constraint options: hold Shift to constrain new bend to horizontal/vertical relative to previous point.
+- Data persistence: update `edge.data.bendPoints` array and re-export automatically.
+
+### 14.3 Routing Strategies
+
+- Orthogonal refinement: automatically insert intermediate bends that minimize total Manhattan distance while avoiding node bounding boxes (simple obstacle avoidance first, full A* grid later).
+- Spline smoothing toggle: user can convert straight polyline with bends into spline (flag `routing: 'spline'`).
+- Future: incremental reroute when nodes move (preserve user-added bends unless overlapping a node).
+
+### 14.4 Label Management
+
+- Dynamic label anchoring at geometric path midpoint using cumulative length instead of centroid average.
+- Auto-flip label to avoid overlapping nodes (bounding box collision check).
+- Multi-line label support (parse `\n`).
+- Optional label background pill (semi-transparent rounded rect) for contrast.
+
+### 14.5 Styling UI
+
+- Property pane section for selected edge: stroke color picker, width slider, line style dropdown, arrow source/target dropdown, routing mode selector, label text input.
+- Live preview updates diagram state debounced (e.g., 120ms) for performance.
+- Bulk edit (multi-selected edges) applies changes to all, showing mixed-value indicators.
+
+### 14.6 Data & Validation
+
+- Extend importer stats: `invalidEdgeStrokeColors`, `invalidEdgeStrokeWidths`, `unknownEdgeKeys`, `invalidBendPoints`.
+- Add deterministic ordering of bend points on save (already implied; enforce numeric sort if future features add z-order semantics).
+- Schema version bump to reflect edge styling addition (e.g., 1.1.0) and add upgrade path for pre-1.1 graphs (set default styling).
+
+### 14.7 Performance Considerations
+
+- Path caching: memoize computed `d` strings keyed by (points, routing, smoothing) to avoid recompute on unrelated state updates.
+- Layer virtualization for large edge counts (thousands) – slice rendering to viewport bounding box + margin.
+- Optional Web Worker for heavy future routing algorithms (deferred; maintain pure UI thread rendering for now).
+
+### 14.8 Testing Additions
+
+- Unit test: bend point round-trip across export/import with multiple routing modes.
+- Visual regression: captured PNG/SVG snapshots for representative edge styles (requires deterministic layout).
+- Interaction E2E: add tests for selecting edge, editing label, adding/removing bends.
+- Property-based: random edge sets with varied styling ensure importer resilience.
+
+### 14.9 Vendor Compatibility (Forward-Looking)
+
+- Map arrow types to yFiles equivalents where possible (standard -> standard, diamond -> diamond, circle -> circle) when emitting vendor namespace.
+- Translate yFiles `PolyLineEdge` / `SplineEdge` bends into internal `bendPoints` and `routing`.
+- On export, optional vendor block generation behind `includeVendorExtensions` flag.
+
+### 14.10 Accessibility
+
+- Provide focusable edge elements (tab index) with ARIA label "Edge from &lt;SourceNode&gt; to &lt;TargetNode&gt; label: &lt;EdgeLabel&gt;".
+- High-contrast mode: ensure dashed/dotted patterns meet contrast guidelines (adjust strokeColor fallback).
+
+### 14.11 Tooling & Authoring
+
+- Add a mini floating toolbar when an edge is selected (quick arrow toggle, style preset buttons).
+- Style presets (e.g., "Flow", "Dependency", "Error") applying a bundle of stroke + arrow + dash.
+
+### 14.12 Potential Risks
+
+- Over-complex routing early: mitigate by incremental shipping (straight -> bend editing -> routing heuristics -> obstacle avoidance).
+- Performance with many splines: fallback to straight lines over threshold (configurable) with user toggle to enable full fidelity.
+
+---
+
+Section 14 added 2025-09-12.
