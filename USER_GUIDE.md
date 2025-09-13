@@ -1,12 +1,22 @@
 # AI Diagram Imp – End User Guide
 
-> Version: 1.0 (matches schemaVersion 1.0.0)
+> Guide Version: 1.1 (matches current `schemaVersion` = **1.1.0** in code)
 
 ## 1. What Is This?
 
-AI Diagram Imp is a lightweight, early-stage web application for experimenting with diagram creation. It demonstrates a command-based state manager, schema validation, export features, automated screenshots, and testing scaffolding.
+AI Diagram Imp is a lightweight, early-stage, client-only web application for experimenting with simple node/edge diagrams. It demonstrates:
 
-Current focus: nodes and basic directed edges rendered on an SVG canvas. You can draw connections between nodes, choose a target arrowhead style, and export/import them via GraphML or JSON. Supported shapes: rectangle, rounded rectangle, square, ellipse/circle, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder (pseudo), star.
+- Command-based state manager with undo/redo (Zustand + custom `CommandManager`).
+- SVG rendering of nodes & edges (no canvas/zoom yet).
+- Rich shape palette for nodes.
+- GraphML (Beta) export/import with warning aggregation.
+- JSON export/import (schema validated with AJV Draft 2020-12).
+- Raster export (PNG + JPEG) via SVG→Canvas pipeline.
+- Automated screenshot generation (Playwright) & unit/e2e tests.
+
+Current focus: positioning, styling (fill / text / stroke), simple edge routing variants (straight default; orthogonal + spline when encoded via data), and basic arrowhead selection.
+
+Supported node shapes (property pane): rectangle, rounded rectangle, square, ellipse/circle, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder, star.
 
 ## 2. Quick Start
 
@@ -38,7 +48,7 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 
 | Area | Description |
 |------|-------------|
-| Toolbar (top) | Left hamburger menu (New, Import, Add Node, Export JSON/PNG/JPEG) plus inline Undo / Redo buttons and app title. |
+| Toolbar (top) | Hamburger menu (New, Import, Export JSON, Export/Import GraphML Beta, Export PNG, Export JPEG) plus inline New Node, Undo, Redo, and Arrow selector. |
 | Sidebar (left) | Sliding Properties panel (overlays diagram when open; when no node is selected it is fully hidden and the canvas uses the full width). |
 | Canvas (center) | Large scrollable area containing the diagram SVG and nodes. |
 | Splash Screen | (Production or forced) Brief logo screen at launch, fades out automatically. |
@@ -47,22 +57,23 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 
 Current interactions:
 
-- Open the hamburger menu (top-left ☰) then click **Add Node** to append a new node at a default position (x=100, y=80) labelled with its `type` (default "start").
-- **Select a node** by clicking it; selection highlight appears (accent stroke). Click empty canvas to clear selection and hide the property pane.
-- **Edit properties**: With a node selected, the sidebar shows a pane where you can modify:
-  - Text label (stored in `node.data.text`; falls back to `type` if empty)
-  - Shape (rectangle, rounded, ellipse)
-  - Text color / background color
-    - Defaults for newly added nodes: text color `#000000` (black), background color `#ADD8E6` (light blue)
+- Open the hamburger menu (☰) then click **New Node** (or the inline button) to append a new node at default position (x=100, y=80) with `type` = "start" (text defaults to that type until changed).
+- **Select a node** by clicking it; highlight appears. Click empty canvas to clear selection and hide the property pane.
+- **Edit properties** (Property Pane auto-slides in on selection):
+  - Text label (stored in `data.text`; falls back to node `type` if empty)
+  - Shape (full palette listed above)
+  - Text color, background color, stroke color, stroke width (positive numbers only; blank reverts to auto stroke)
+  - (Node `type` currently not editable from pane—text label recommended for display)
+  Defaults for new nodes: text `type`, textColor `#000000`, backgroundColor `#ADD8E6`.
 - Drag a node: press and hold on the node shape, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y` and any updated `data` fields.
-- Create an edge: press on the small circular connection handle (right side of a node) and drag to another node. Release over a *different* node to create a directed edge. A dashed temporary guide line appears while dragging.
-- Target arrowhead: use the Arrow selector in the toolbar to change the default arrowhead style (None, Standard, Circle, Diamond, Tee) for newly created edges.
-- Use **New** (inside the hamburger menu) to reset to a blank diagram (title set to "Untitled Diagram").
+- Create an edge: press the small circular connection handle (on right side of a node) and drag to a *different* node. Release to create an edge. Temporary dashed guide shows during drag.
+- Target arrowhead: use the toolbar selector (None, Standard, Circle, Diamond, Tee) to set default arrowhead for new edges (stored in each new edge's `data.arrowTarget`).
+- Use **New** to reset to a blank diagram (title resets to "Untitled Diagram").
 
 ## 5. Importing JSON
 
 1. Open the hamburger menu and click **Import**.
-2. Select a `.json` file matching the diagram schema (see Section 10).
+2. Select a `.json` file matching the diagram schema (see Section 10). Only `.json` accepted (drag/drop not yet implemented).
 3. On success, the diagram state replaces the current one. On failure, an alert appears and validation errors are logged to the browser console.
 
 ## 6. Exporting
@@ -71,33 +82,37 @@ Current interactions:
 
 - Open the hamburger menu and click **Export JSON** to download the current state as `<title>.json`.
 
-### 6.2 Export JPEG
+### 6.2 Export PNG
+
+- Hamburger menu → **Export PNG**. Rasterizes SVG with alpha retained (if background transparent) using device pixel ratio scaling.
+- File name: `<title>.png`.
+
+### 6.3 Export JPEG
 
 - Open the hamburger menu and click **Export JPEG** to rasterize the current visible SVG region into a JPEG file. A white background is added automatically; device pixel ratio is respected for higher DPI.
 - File name defaults to `<title>.jpg`.
 
-### 6.3 GraphML (Beta)
+### 6.4 GraphML (Beta)
 
 Two actions are available in the hamburger menu (labeled *Beta*):
 
 - **Export GraphML (Beta)**: Downloads a `.graphml` file representing the current diagram (nodes, edges, geometry, basic colors, stroke + shape metadata, plus extra node data as JSON). Selection state and undo history are excluded.
 - **Import GraphML (Beta)**: Loads a `.graphml` file produced by this app (or a compatible external tool) and replaces the current diagram.
 
-Recent Phase 3 additions:
+Current Beta feature set:
 
-- Canonical shape persistence (rect, diamond, ellipse, circle, hexagon; others downgrade to `rect`).
-- Optional node `strokeColor` & `strokeWidth` round-trip with validation.
-- Export option (developer flag) `omitDefaultShape` to suppress `shape=rect` entries for leaner files. When omitted, importer warns and defaults to `rect`.
-- Basic color validation for strokeColor (simple hex or name). Invalid colors are ignored with warnings.
-- Warning statistics (not surfaced in UI yet) track counts for invalid stroke colors, widths, missing shapes, unknown node keys, vendor namespaces.
+- Canonical shape persistence (subset used in GraphML: rect, diamond, ellipse, circle, hexagon). Non-canonical shapes (triangle, star, etc.) downgraded to `rect` on import with warning.
+- Optional node `strokeColor` & `strokeWidth` round-trip (positive numeric width only).
+- Developer flag `omitDefaultShape` (internal) can skip `shape=rect` to reduce size.
+- Basic color validation for strokeColor (hex or simple name). Invalid -> ignored + warning.
+- Warning stats collected: invalidStrokeColors, invalidStrokeWidths, missingShape, unknownNodeKeys, vendorNamespaces.
 
-Limitations (Beta):
+Limitations (GraphML Beta):
 
-- Directed edges only.
-- Grouping / nested graphs unsupported and skipped.
-- Vendor (yFiles/yWorks) extensions detected but ignored (future roadmap); any `<y:*>` blocks are not parsed.
-- Non-canonical shapes (e.g. triangle, star) currently exported as provided but *if imported* and not in canonical set they downgrade to `rect` with a warning.
-  Basic edge styling fields (strokeColor, strokeWidth, lineStyle, dashPattern, arrowSource, arrowTarget, label, routing, bendPoints) round-trip in GraphML. UI currently exposes only target arrowhead (others use defaults).
+- Directed edges only (no undirected flag).
+- No grouping / nested graphs.
+- Vendor (yFiles/yWorks) namespaces detected → recorded only.
+  Basic edge styling fields (strokeColor, strokeWidth, lineStyle, dashPattern, arrowSource, arrowTarget, label, routing, bendPoints) round-trip. UI currently exposes only arrowTarget; others may be present if GraphML edited externally.
 
 Exported Node Keys (subset):
 
@@ -143,7 +158,7 @@ npx playwright test tests/e2e/screenshots.spec.ts
 
 ## 10. Diagram JSON Schema (Summary)
 
-`schemaVersion`: must be `"1.0.0"`
+`schemaVersion`: must be `"1.1.0"`
 
 ### Required Top-Level Fields
 
@@ -179,7 +194,7 @@ npx playwright test tests/e2e/screenshots.spec.ts
 
 ### Validation
 
-Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log errors to the console.
+Validation uses AJV (Draft 2020-12). Invalid imports show an alert and log errors to the console.
 
 ## 11. Keyboard Shortcuts & Focus Behavior
 
@@ -188,11 +203,11 @@ Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log
 | Ctrl/Cmd + Z | Undo |
 | Ctrl + Y or Ctrl/Cmd + Shift + Z | Redo |
 | Tab / Shift + Tab | Cycle forward / backward through nodes (selection changes) when focus is NOT inside the property pane form |
-| Arrow Keys | Nudge selected node (10px) |
-| Ctrl/Cmd + Arrow Keys | Fine nudge selected node (1px) |
-| Delete / Backspace | Delete selected node |
-| Esc | Clear selection (also closes sliding panel) |
-| Enter / F2 | Focus text field in property pane for quick edit |
+| Esc | Clear selection / close property pane |
+| Tab / Shift + Tab | Cycle focus (canvas nodes OR trapped inside property pane) |
+| Enter | Focus text field in property pane when a node is selected (browser focus heuristics) |
+
+Not implemented yet: keyboard node nudging, delete key removal of nodes (must be done via future UI or code), multi-select traversal.
 
 ### Focus Trap
 
@@ -200,21 +215,26 @@ When the properties panel is open and focus is inside it, `Tab` / `Shift+Tab` cy
 
 ## 12. Known Limitations
 
-- Single selection only (no multi-select / marquee yet).
-- No node resizing yet; limited live edge styling controls (only arrowhead target picker).
-- No persistence beyond manual export/import (in‑memory only).
-- Single theme; dark only.
-- Limited accessibility review (improvements planned for keyboard nav & ARIA labelling of nodes and property form).
+- Single selection only (no multi-select / marquee / group move).
+- No node resizing; size fixed at creation (shape changes do not auto-resize).
+- Edge styling controls limited to arrow target; other style fields only via GraphML editing.
+- No persistence beyond manual export/import; no autosave or revision history.
+- Single theme (dark) enforced; no light mode switch.
+- Limited accessibility review; ARIA roles basic, keyboard movement of nodes absent.
+- No zoom/pan or viewport controls.
+- Undo stack unbounded (session memory only) and can fill with many `MoveNode` entries during drags.
 
-## 13. Roadmap Ideas (Non-binding)
+## 13. Roadmap Ideas (Indicative / Non-binding)
 
-- Multi-select & selection rectangle.
-- Edge creation and routing with arrows.
-- Zoom & pan controls.
-- Multiple themes & light mode.
-- Autosave to localStorage with revision history.
-- Node type palette & inline editing of labels.
-- Export to SVG/PNG directly (in addition to JPEG).
+- Multi-select & selection rectangle; command coalescing for drags.
+- Keyboard nudging and delete action.
+- Zoom & pan + minimap.
+- Schema migration pipeline & validation toggle in dev mode.
+- Autosave (localStorage) & lightweight history snapshots.
+- Extended edge styling UI (line style, dashed patterns, bend editing).
+- Direct SVG export (trivial addition) & PDF.
+- Plugin expansion: node/edge type metadata & behaviors.
+- Performance: node-level memoization, drag throttling.
 
 ## 14. Troubleshooting
 
@@ -223,7 +243,7 @@ When the properties panel is open and focus is inside it, `Tab` / `Shift+Tab` cy
 | Import alert: Invalid diagram JSON | Schema mismatch; open DevTools Console to view AJV errors. |
 | Export JPEG blank/partial | Ensure nodes visible; re-run after a short delay if fonts loading. |
 | Undo not undoing expected step | Only mutating commands create history; repeated Add Node is reversible step-by-step. |
-| Example URL shows empty canvas | Misspelled example key; valid keys: `basic-flow`, `architecture`, `grid`. |
+| Example URL shows empty canvas | Misspelled example key (`basic-flow`, `architecture`, `grid`). |
 
 ## 15. Testing & Automation (FYI)
 

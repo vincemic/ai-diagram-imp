@@ -2,13 +2,61 @@
 
 <img src="./logo.png" alt="AI Diagram Imp Logo" width="140" />
 
-AI Diagram Imp web-based diagram generator scaffold (architecture docs, React+Vite app, command pattern, testing setup).
+Lightweight, client-only SVG diagram editor prototype (React + TypeScript + Vite) showcasing:
 
-Now supports basic drag-and-drop repositioning of nodes; updated coordinates persist in exported JSON.
+- Command-based state management with undo/redo (custom `CommandManager` + Zustand store)
+- Rich node shape palette & live property editing (text, fill, stroke, shape)
+- Edge creation via drag handle + configurable arrowheads
+- GraphML (Beta) export/import with validation & warning capture
+- JSON schema (AJV 2020-12) validated import/export
+- PNG & JPEG raster export (SVG clone → canvas)
+- Playwright E2E & Vitest unit tests (including screenshot generation)
+- Updated architecture documentation with clear current vs future scope
 
-Properties Sidebar: The properties panel now slides in only when a node is selected and includes a focus trap so Tab / Shift+Tab stay within the panel fields until you press Esc or click the canvas.
+For detailed usage see the **[User Guide](./USER_GUIDE.md)**. Architectural internals: **[ARCHITECTURE.md](./ARCHITECTURE.md)**.
 
-➡ For end-user instructions see: [User Guide](./USER_GUIDE.md)
+## Quick Start
+
+```powershell
+cd app
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173> and optionally append `?example=basic-flow` (also `architecture`, `grid`).
+
+## Key Features (Current)
+
+- Add/move nodes (drag) with immediate updates
+- Property pane (auto-slide, focus trap) for text, colors, shape, stroke
+- Shape set: rect, rounded, square, ellipse, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder, star
+- Edge creation by dragging connection handle between nodes
+- Arrowhead selector (None, Standard, Circle, Diamond, Tee)
+- Export: JSON, GraphML (Beta), PNG, JPEG
+- Import: JSON (schema validated), GraphML (Beta with warnings)
+- Deterministic GraphML ordering & warning statistics
+
+## Current Limitations
+
+- Single selection only; no multi-select / marquee / group move
+- No resize handles or keyboard nudging / delete shortcut yet
+- No zoom/pan; static SVG viewport
+- Edge styling UI limited (line style, bends editable only by GraphML)
+- Dark theme only; no theming system
+- Undo stack unbounded; many entries during long drags
+- No autosave or revision history (manual export/import)
+
+See full detail and roadmap ideas in the [User Guide](./USER_GUIDE.md) and [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## Known Issues
+
+- Frequent undo entries during continuous dragging (one command per pointer move) – planned coalescing.
+- GraphML import downgrades non-canonical shapes silently to `rect` after warning (no UI surfacing yet).
+- No deletion UI for nodes/edges (must clear with New or future feature).
+- Accessibility: limited keyboard operations; screen reader labeling minimal.
+- Large diagrams may cause sluggish re-render due to full SVG tree reconciliation.
+
+See [CHANGELOG](./CHANGELOG.md) for recent updates and pending items.
 
 ## Example Screenshots
 
@@ -110,6 +158,18 @@ Then open `http://localhost:5173/ai-diagram-imp/`.
 - Missing assets (404): Ensure `base` in `vite.config.ts` matches deployment path.
 - Old cache: Invalidate with a hard refresh (Ctrl+Shift+R) or bump a query parameter.
 - 404 on deep links: GitHub Pages needs a redirect fallback; consider adding a `404.html` copying `index.html` for client routing (not yet necessary if only root usage).
+
+## Contributing / Testing
+
+Run unit and e2e tests:
+
+```powershell
+cd app
+npm run test:unit
+npx playwright test
+```
+
+Please open an issue or PR for enhancements; architecture and user guide updates welcome.
 
 ## License
 

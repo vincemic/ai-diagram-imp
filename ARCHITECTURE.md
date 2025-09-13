@@ -1,8 +1,10 @@
-# Web Diagram Generator Architecture
+# Web Diagram Generator Architecture (Current Implementation)
+
+> Status: Updated to reflect repository code as of current main branch. Earlier version of this document contained forward-looking sections (layout engine, advanced plugin sandboxing, multi-format export) that are **not yet implemented**. This revision distinguishes what exists now vs. future roadmap.
 
 ## 1. Executive Summary
 
-High-level architecture for a web-based interactive diagram generator that produces a canonical JSON diagram definition and can (a) render that JSON directly in-browser, and (b) export the rendered view as a JPEG. The solution emphasizes a clean separation between the model (JSON schema), editing logic, rendering pipeline, and export services. Configuration is persisted client-side via `localStorage` while keeping the design open for optional future backend services (e.g., collaboration, authentication, storage, rendering at scale).
+A client‑only React + TypeScript application for authoring simple node/edge diagrams. The in‑memory authoritative structure is a `DiagramState` object (nodes, edges, selection, metadata) managed through an explicit Command pattern layered over a lightweight undo/redo stack. Rendering is presently **pure SVG** (no virtual scene graph abstraction beyond React & simple mapping). Persistence is limited to exporting / importing GraphML (partial support) and storing minimal user preferences in `localStorage` (`theme`, `lastOpenedTitle`). Export to JPEG/PNG is achieved by serializing the existing SVG DOM, inlining computed styles, and rasterizing to an off‑screen `<canvas>`.
 
 ## 2. Goals & Non-Goals
 
@@ -24,283 +26,217 @@ High-level architecture for a web-based interactive diagram generator that produ
 
 ## 3. High-Level Architecture Overview
 
-Logical layers:
+Implemented layers (current):
 
-1. UI Layer (React/Vanilla + Component Library) – tools, panels, canvas.
-2. Editor Core (State Manager + Commands + Undo/Redo) – domain state.
-3. Diagram Model (JSON Schema + Validation) – canonical data.
-4. Layout & Geometry Engine – positioning, routing, hit-testing.
-5. Renderer – translates model state → DOM/SVG/Canvas.
-6. Export Engine – rasterization (Canvas → JPEG) & future vectors.
-7. Configuration Store – `localStorage` abstraction + schema/migration.
-8. Plugin Layer – register node/edge types, behaviors, serializers.
+1. **UI / React Components** (`src/components/*`): Canvas (`DiagramCanvas`), toolbars, property panes, menus, splash.
+2. **Command & State Core** (`src/core/commands.ts`, `src/core/store.ts`): Command objects mutate immutable `DiagramState` snapshots via a `CommandManager` managing undo/redo stacks.
+3. **Diagram Model & Validation** (`src/model/diagram.schema.json`, `validateDiagram.ts`): AJV2020 schema validation utility; not yet fully integrated into all mutation paths.
+4. **GraphML Import/Export** (`src/core/graphml.ts`): Deterministic export (implemented) + browser DOM‑based import with warning & metric collection.
+5. **Export (Raster)** (`src/core/exportJPEG.ts`): SVG clone + inline style + canvas rasterization to JPEG or PNG.
+6. **Preferences** (`src/core/preferences.ts`): Zod schema, single namespaced key in `localStorage`.
+7. **Minimal Plugin Registry** (`src/plugins/registry.ts`): Basic node type registration (size metadata only).
 
-Deployment: Pure static site (HTML/CSS/JS) served via CDN. No mandatory backend.
+Not yet implemented (future roadmap items retained intentionally): dedicated layout/geometry engine abstraction, pluggable renderer backends (Canvas), sophisticated plugin sandboxing, multi-user collaboration, advanced configuration migration, telemetry hooks.
 
-## 4. Core User Flows
+Deployment: Static build (Vite) – no backend dependencies.
 
-1. Create Diagram → Initialize empty model (with metadata & schema version) → UI updates.
-2. Add Node/Edge → Command executed → State updated → Re-validate → Renderer diff patches view.
-3. Select & Edit → Live property panel updates JSON fragment → Re-render affected elements only.
-4. Save / Export JSON → Serialize canonical in-memory model (ordered, normalized) → Download as `.json`.
-5. Import JSON → Validate schema & version → Migrate if needed → Load into state → Render.
-6. Export JPEG → Snapshot current visual tree → Render off-screen canvas → Encode → Download.
+## 4. Core User Flows (Implemented)
 
-## 5. JSON Diagram Definition
+1. **Create Diagram**: App boots with `initialState` (schemaVersion `1.1.0`).
+2. **Add Node**: UI action dispatches `AddNode` command → state append.
+3. **Move Node**: Pointer drag triggers frequent `MoveNode` commands (not throttled yet) → immediate store update → React re-render.
+4. **Connect Nodes**: Drag from connection handle → on pointer up over another node dispatch `AddEdge` with basic styling defaults.
+5. **Select / Multi-select**: `SetSelection` command (currently single selection from canvas; multi-select TBD).
+6. **Update Node Properties**: Property pane (where present) issues `UpdateNodeProps` command merging partial `data`.
+7. **Export GraphML**: `toGraphML(diagram)` returns deterministic XML; optional omission of default rectangle shape.
+8. **Import GraphML**: `fromGraphML(xml)` builds `DiagramState`; issues warnings and collects basic stats (shape fallback, unknown keys, vendor namespaces, invalid colors/widths). No migration pipeline yet beyond adopting embedded version.
+9. **Export Image (JPEG/PNG)**: Calls `exportCurrentViewAsJPEG|PNG` which serializes current SVG view box, inlines style attributes, rasterizes via `<canvas>`.
 
-### Design Principles
+Not yet implemented: JSON canonical export distinct from GraphML; incremental diff renderer (React handles reconciliation); explicit schema migrations.
 
-- Versioned: `schemaVersion` for migrations.
-- Minimal & explicit: no derived layout stored unless explicitly locked.
-- Stable identifiers: UUID-like `id` for nodes/edges for diffing & referencing.
-- Separation of semantic vs visual properties (e.g., `type`, `data` vs `style`).
-- Extensible: arbitrary `extensions` namespaced keys allowed.
+## 5. In-Memory DiagramState (Actual Shape)
 
-### Top-Level Structure (Example)
+`DiagramState` (from `commands.ts`):
 
-```json
-{
-  "schemaVersion": "1.0.0",
-  "metadata": {
-    "title": "Sample Diagram",
-    "created": "2025-09-12T12:34:56Z",
-    "modified": "2025-09-12T12:34:56Z"
-  },
-  "canvas": {
-    "width": 2400,
-    "height": 1600,
-    "gridSize": 16,
-    "background": { "type": "solid", "color": "#ffffff" }
-  },
-  "nodes": [
-    {
-      "id": "n1",
-      "type": "process",
-      "position": { "x": 120, "y": 240 },
-      "size": { "w": 180, "h": 60 },
-      "data": { "label": "Start" },
-      "style": { "fill": "#E3F2FD", "stroke": "#1976D2" },
-      "ports": [ { "id": "p1", "side": "right" } ],
-      "extensions": {}
-    }
-  ],
-  "edges": [
-    {
-      "id": "e1",
-      "type": "straight",
-      "source": { "nodeId": "n1", "portId": "p1" },
-      "target": { "nodeId": "n2", "portId": "p3" },
-      "style": { "stroke": "#424242", "width": 2 },
-      "markers": { "end": "arrow" },
-      "extensions": {}
-    }
-  ],
-  "definitions": {
-    "nodeTypes": {
-      "process": { "resizable": true, "minSize": { "w": 120, "h": 48 } }
-    },
-    "edgeTypes": {
-      "straight": { "routing": "direct" }
-    }
-  },
-  "extensions": {}
+```ts
+interface DiagramState {
+  schemaVersion: string;          // CURRENT_SCHEMA_VERSION = '1.1.0'
+  nodes: DiagramNode[];           // Each carries geometry + data blob
+  edges: DiagramEdge[];           // Simple source/target (nodeId only)
+  selection: string[];            // Currently active selected node/edge ids
+  metadata: { title: string };    // Minimal metadata (title only)
+}
+
+interface DiagramNode {
+  id: string; type: string; x: number; y: number; w: number; h: number;
+  data?: Record<string, unknown>; // backgroundColor, textColor, shape, strokeColor, strokeWidth, text, etc.
+}
+
+interface DiagramEdge {
+  id: string; type: string; source: { nodeId: string }; target: { nodeId: string };
+  data?: Record<string, unknown>; // lineStyle, dashPattern, arrowSource/Target, routing, bendPoints, label, styling.
 }
 ```
 
-### Validation & Migrations
+Not present (contrary to prior speculative example): canvas sizing, port lists, nodeType definitions with constraints, explicit style vs semantic separation, extensions object, created/modified timestamps.
 
-- JSON Schema (Draft 2020-12) distributed with app; version keyed by `schemaVersion`.
-- On load: parse → basic structural validation → deep semantic validation (e.g., edge references existing nodes & ports) → migration pipeline (sequence of pure functions) if version mismatch.
+Validation: AJV schema exists but is not enforced on every command dispatch; targeted use in tests / potential import validation.
 
-## 6. State & Command Architecture
+## 6. State & Command Architecture (Implemented)
 
-- Central immutable store (e.g., Zustand, Redux, or custom) representing current diagram state.
-- Commands encapsulate intent: `AddNode`, `UpdateNode`, `DeleteEdge`, `MoveNodes`, `BatchUpdate`.
-- Each command: validate preconditions → produce new state → push onto undo stack.
-- Undo/Redo stacks store command inverses or prior state snapshots (bounded memory strategy).
-- Derived selectors compute: selection sets, spatial index (R-Tree or Quadtree), render list.
+Zustand-based store (`useDiagramStore`) holds a single `CommandManager` instance. React components subscribe to slices (e.g., `selectDiagramState`).
 
-## 7. Layout & Geometry
+`CommandManager` responsibilities:
 
-- Core utilities: rectangle ops, intersection tests, orthogonal routing, anchor resolution, zoom/pan transforms.
-- Edge routing strategies (pluggable): direct, orthogonal, curved (Bezier). Each returns polyline/curve path segments.
-- Hit-testing: spatial index of node bounds + port hotspots + edge segments for pointer interaction.
-- Auto-layout (Phase 2): optional algorithms (DAG layered layout, force-directed) executed on demand; results not persisted unless user chooses to "freeze layout".
+- Holds current `DiagramState` (mutable field `_state`).
+- Applies a `Command` via `dispatch(cmd)` → obtains new state from `cmd.execute(prev)`.
+- Generates inverse for undo either by calling `cmd.invert(prev,next)` or storing a `SnapshotCommand(prev)` fallback.
+- Maintains `undoStack` & `redoStack` as arrays of `Command` instances.
 
-## 8. Rendering Pipeline
+Implemented Commands: `AddNode`, `RemoveNode`, `MoveNode`, `AddEdge`, `RemoveEdge`, `SetSelection`, `UpdateNodeProps`, `ReplaceState` + internal `SnapshotCommand`.
 
-Rendering abstraction supports interchangeable backends (SVG initial, Canvas optional):
+Notes / Gaps:
+- No batching / transactional command grouping yet.
+- Dragging issues many `MoveNode` commands (potential performance improvement area).
+- No memory cap or pruning policy on undo stack presently.
+- Validation & business rules minimal (e.g., no prevention of duplicate IDs, no edge endpoint existence check inside commands — canvas rendering filters invalid references).
 
-1. Diff Engine: Compares previous and next virtual scene graph (VSG) derived from state.
-2. Element Builders: Map node/edge models to VSG primitives (shapes, paths, text).
-3. Renderer Adapter: Applies diff to DOM/SVG nodes with minimal mutation.
-4. Interaction Layer: Overlays selection boxes, drag handles, guides, snap lines.
-5. Accessibility Hooks: ARIA roles, focus rings, keyboard nav order.
+## 7. Layout, Geometry & Routing (Current)
 
-Performance Techniques:
+There is **no separate geometry module**. All geometric logic lives inline inside `DiagramCanvas.tsx`:
 
-- RequestAnimationFrame batching.
-- Debounced layout recalculation.
-- Dirty rectangle tracking for Canvas backend.
-- Lazy text measurement caching.
+- Edge path calculation supports three routing modes driven by edge `data.routing`: `straight` (default polyline), `orthogonal` (simple L-shape; bends minimal), `spline` (Catmull-Rom to Bezier conversion for >2 points).
+- Bend points optional (`data.bendPoints`: array of `{x,y}`) used verbatim in path generation.
+- Hit detection for connecting edges uses simple bounding box checks over current node array (O(n)).
+- Drag operations compute local SVG coordinates via `getScreenCTM().inverse()`; no zoom/pan transform yet.
+- Shapes (ellipse, square, triangle, diamond, parallelogram, trapezoid, hexagon, octagon, cylinder, star, rounded/rect) are rendered by conditional branches directly in JSX; geometry math inlined.
 
-## 9. Export to JPEG
+Missing vs prior design: spatial index, separate layout engine, auto-layout algorithms, multi-port anchoring, zoom/pan.
 
-Primary (Client-Only) Path:
+## 8. Rendering (Current)
 
-1. Serialize current scene to SVG string (ensures crisp vector fidelity).
-2. Create off-screen `<canvas>` sized to bounding box * devicePixelRatio.
-3. Draw SVG via `Image` element once loaded.
-4. `canvas.toDataURL('image/jpeg', quality)` and trigger download.
+Rendering uses React's reconciliation; there is **no custom diff engine** or abstract VSG layer. Each command dispatch triggers `set({})` in Zustand causing subscribed components to re-render.
 
-Considerations:
+Notable points:
+- All nodes and edges are rendered every update; no memoized partitioning yet.
+- Accessibility: Root SVG has `role="img"`; nodes use `role="group"` with `aria-label` from text or type.
+- Selection styling via CSS classes & data attributes.
+- Connection handles (small circles) initiate edge creation.
 
-- Background fill required (JPEG lacks alpha); derive from canvas background.
-- Font loading: ensure `document.fonts.ready` resolved before render.
-- Large diagrams: tile rendering or scale factor cap to prevent memory errors.
+Optimization opportunities: limit `MoveNode` induced full re-render, introduce node-level memoization, implement minimal reconciliation for frequently updated attributes.
 
-Optional (Future) Server Path:
+## 9. Export (JPEG / PNG)
 
-- Headless renderer (Node + Puppeteer / Sharp) for deterministic, large-scale exports (PNG/PDF/SVG/JPEG) and batch processing.
+Implemented flow (`exportJPEG.ts`):
 
-## 10. Configuration via localStorage
+1. Clone existing SVG and inline computed style properties (fill, stroke, font, etc.).
+2. Optionally inject background rectangle if original had CSS background.
+3. Serialize cloned SVG, load into `<img>`, draw onto `<canvas>` sized by element bounding box × scale (default `devicePixelRatio`).
+4. Use `canvas.toBlob` to generate JPEG / PNG; trigger download via temporary anchor.
 
-Key Strategy: Prefix all keys: `dg:<version>:<key>` to avoid collisions.
+PNG export shares same pipeline; only MIME type differs. Background override is supported via options.
 
-Example Keys:
+Not yet: multi-tile large surface export, SVG direct download (could be derived trivially), PDF.
 
-- `dg:1:preferences` – JSON blob { theme, snapToGrid, showMiniMap }.
-- `dg:1:recent` – Array of recent diagram metadata.
-- `dg:1:featureFlags` – Map of experimental toggles.
+## 10. Preferences / localStorage
 
-Access Pattern:
+Current implementation is minimal:
 
-- Thin abstraction module: get(key) / set(key, validator) / migrate(previousVersion).
-- On app load: detect version mismatch and run migration for persisted preferences.
-- Validation: Zod (or similar) runtime schema ensures corrupted entries are discarded with fallback defaults.
+- Single key: `ai-diagram-imp:preferences:v1`.
+- Schema (Zod): `{ theme: 'dark'; lastOpenedTitle?: string }` – only `dark` theme enumerated; no dynamic theming.
+- Utility functions: `loadPreferences`, `savePreferences`, `updatePreferences`.
+- No migration logic or feature flag storage yet.
 
-Privacy & Limits:
+## 11. Plugin / Extensibility (Current)
 
-- Avoid storing full diagrams if size risk (quota). Encourage manual export/import.
-- Provide "Clear Local Data" action.
+Current registry: `registerNodeType({ type, defaultSize })` storing size metadata only; retrieval via `getNodeType(type)`.
 
-## 11. Plugin & Extensibility Model
+Missing features from prior plan: edge type registration, behaviors, property panel schema, version negotiation, sandboxing, renderer middleware.
 
-Extension Points:
+Commands are the pragmatic extension surface today—new behavior added by defining new `Command` implementations and dispatching them from UI.
 
-- Node Types: register render, default size, property panel schema, behaviors (resize, anchors).
-- Edge Types: routing strategy, marker shapes, interaction handles.
-- Commands: custom domain operations that integrate with undo/redo.
-- Serializers: augment `extensions` namespace with plugin-specific data.
-- Render Middleware: intercept VSG before diff (e.g., theming, overlays).
+## 12. Testing (Actual State)
 
-Registration Mechanism:
+Test stacks present:
 
-- Plugin manifest object consumed at boot. Merges into registries; conflicts resolved by explicit namespacing (e.g., `acme.timelineNode`).
-- Version negotiation: plugin declares supported `schemaVersionRange`.
+- **Unit (Vitest)**: command behavior (`updateNodeProps`, edge style serialization, shape props, GraphML export/import invariants).
+- **End-to-End (Playwright)**: startup smoke, node interactions (drag, property pane), export image, keyboard navigation, UI element presence, screenshot generation for docs.
 
-Isolation & Safety:
+No current pixel-diff visual regression harness; screenshot tests validate presence rather than rendering tolerance.
 
-- Defensive runtime guards; plugin cannot mutate core state directly—must dispatch commands.
-- Optional sandbox (iframe / Realms future) for untrusted third-party plugins.
+Determinism techniques implemented: sorting nodes & edges during GraphML export for consistent XML order.
 
-## 12. Non-Functional Requirements
+## 13. Error Handling (Current)
 
-Performance:
+- GraphML import: accumulates warnings (unknown keys, invalid stroke width/color, parse failures) returned to caller; no UI surfacing implemented in code sampled.
+- Preferences load: silent fallback to defaults upon parse or validation failure.
+- Export: throws errors for missing SVG / canvas context; calling UI should handle (no global error boundary yet).
+- Commands: minimal precondition checks; invalid IDs lead to no-ops or downstream rendering omissions.
 
-- Target <16ms average frame during drag on mid-tier hardware.
-- Load & render medium diagram (200 nodes, 300 edges) <1.5s.
+## 14. Migration Strategy (Gap)
 
-Accessibility:
+While `schemaVersion` exists (`CURRENT_SCHEMA_VERSION = '1.1.0'`), there is **no implemented migration pipeline**. Import simply trusts provided version. Preferences have no versioned migration beyond the namespaced key.
 
-- Keyboard navigation for selection & movement (arrow keys + modifiers).
-- Screen reader labels via node `data.label`.
+Future direction: Introduce ordered array of migration transformers keyed by semantic version; apply sequentially when older version detected during GraphML or JSON import.
 
-Security:
+## 15. Security Considerations (Current)
 
-- No eval-based plugin loading; static import or vetted dynamic modules.
-- Sanitize text for SVG injection contexts.
+- User-supplied text currently interpolated into `<text>` elements (SVG text content) – lower XSS risk vs `innerHTML`, but future rich text must sanitize.
+- GraphML import: unknown keys accepted for nodes (warning recorded) may inflate memory but not executed.
+- No dynamic `eval` usage; no remote plugin loading.
+- Potential DoS: unlimited node/edge creation; no quotas / size guards.
 
-Reliability:
+## 16. Roadmap (Revised Snapshot)
 
-- Deterministic serialization ordering (sort nodes/edges by id) for diff-friendly output.
+Near-term:
+- Enforce schema validation on import & optionally on command dispatch (dev mode).
+- Introduce batching / throttling for drag (`MoveNode`) to reduce undo noise.
+- Basic multi-select & group move.
+- Direct SVG export (already nearly available via serialization step).
 
-Testing:
+Mid-term:
+- Migration pipeline for schema version changes.
+- Zoom & pan + viewport transform abstraction.
+- Node/edge type registry expansion (behavior hooks, property schemas).
+- Lightweight layout helpers (orthogonal routing improvements, snap lines).
 
-- Unit: geometry, commands, serializers.
-- Integration: import→render parity tests (snapshot of VSG).
-- Visual regression: Playwright + pixel diff on key examples.
+Longer-term:
+- Auto-layout algorithms integration.
+- Collaboration (shared state via CRDT/OT layer + websocket service).
+- Plugin sandboxing & version negotiation.
+- Additional export targets (SVG packaged, PDF, high-res tiling).
 
-Observability (Future):
+## 17. Open Questions (Current)
 
-- Instrument command dispatch timings.
-- Error boundary with telemetry hooks.
-
-## 13. Error Handling Strategy
-
-- Validation errors surfaced with actionable messages (e.g., "Edge e17 references missing node n404").
-- Non-blocking recoverable errors (layout fail) fall back to default strategy.
-- Corrupt localStorage entries purged with notification.
-
-## 14. Migration Strategy
-
-Schema Migration Steps:
-
-1. Detect older `schemaVersion`.
-2. Sequentially apply transformer functions (pure, idempotent).
-3. Re-validate after each step; abort & report if failure.
-4. Append migration report to in-memory log (debug panel inspection).
-
-Preference Migration:
-
-- Map old keys to new or drop deprecated flags.
-
-## 15. Security & Threat Surface
-
-- Primary risk: XSS via embedded text in nodes. Mitigation: encode or restrict markup.
-- Denial via oversized diagrams: enforce soft limits & warn.
-- Plugin isolation: disallow direct DOM traversal outside provided sandbox API.
-
-## 16. Roadmap (Indicative)
-
-Phase 1 (MVP): Core editor, JSON import/export, SVG render, JPEG export, local preferences.
-Phase 2: Auto-layout algorithms, multi-select alignment, theming, PNG/SVG export options.
-Phase 3: Collaborative editing (CRDT/OT), cloud persistence, user auth, template gallery.
-Phase 4: Advanced analytics (change history, metrics), plugin marketplace, enterprise SSO.
-
-## 17. Open Questions / Decisions Pending
-
-- Choose initial rendering backend: pure SVG vs hybrid (SVG nodes, Canvas edges)?
-- Adopt existing layout libs (ELK, Dagre) or custom minimal implementation?
-- Plugin packaging format (ES modules only vs UMD fallback)?
+- Should schema validation run eagerly (cost) or lazily (risk)?
+- Edge routing architecture: keep inline or extract dedicated module with strategies?
+- Undo stack policy: memory cap and command coalescing (e.g., merge sequential `MoveNode`).
+- Preferred canonical persistence format moving forward: GraphML vs custom JSON.
+- Shape taxonomy consolidation (current divergence between GraphML canonical shapes and runtime shapes like star, cylinder, etc.).
 
 ## 18. Appendix
 
-### 18.1 Alternative Export Paths
-
-- Direct Canvas Render: Skip SVG intermediate but lose vector clarity; harder for crisp text scaling.
-- WebAssembly Rasterizer: For very large diagrams—likely premature optimization.
-
-### 18.2 Example Command (Pseudo-code)
+### 18.1 Command Interface (Implemented)
 
 ```ts
 interface Command<Result = void> {
   readonly name: string;
   execute(state: DiagramState): { state: DiagramState; result?: Result };
-  invert?(prevState: DiagramState, nextState: DiagramState): Command;
+  invert?(prev: DiagramState, next: DiagramState): Command | undefined;
 }
 ```
 
-### 18.3 Minimal Node Type Registration
+### 18.2 GraphML Key Mapping Overview
+
+See `GRAPHML_KEYS` in `graphml.ts` for centralized attribute key declarations enabling deterministic export & resilient import parsing.
+
+### 18.3 Registry Example (Current Simplicity)
 
 ```ts
-registerNodeType('process', {
-  defaultSize: { w: 180, h: 60 },
-  render(props) { /* returns VSG element */ },
-  propertyPanelSchema: { label: { type: 'string', maxLength: 64 } },
-  behaviors: { resizable: true, anchors: ['top','right','bottom','left'] }
-});
+registerNodeType({ type: 'process', defaultSize: { w: 160, h: 60 } });
 ```
 
+Future expansion would add behaviors & rendering metadata.
+
 ---
-End of document.
+End of current implementation architecture document.
