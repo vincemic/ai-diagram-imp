@@ -1,6 +1,6 @@
 import React, { useRef, useCallback } from 'react';
 import { useDiagramStore, selectDiagramState, selectDispatch } from '../core/store.js';
-import { MoveNode } from '../core/commands.js';
+import { MoveNode, SetSelection } from '../core/commands.js';
 
 export const DiagramCanvas: React.FC = () => {
   const state = useDiagramStore(selectDiagramState);
@@ -41,6 +41,12 @@ export const DiagramCanvas: React.FC = () => {
     }
   }, []);
 
+  const handleBackgroundPointerDown = useCallback(() => {
+    dispatch(new SetSelection([]));
+  }, [dispatch]);
+
+  const isSelected = (id: string) => state.selection.includes(id);
+
   return (
     <div id="diagram-container" className="diagram-canvas" data-testid="diagram-container">
       <svg
@@ -54,20 +60,40 @@ export const DiagramCanvas: React.FC = () => {
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
       >
-        <g data-layer="edges" />
+        <g data-layer="edges" onPointerDown={handleBackgroundPointerDown}>
+          <rect x={0} y={0} width={2000} height={1200} fill="transparent" />
+        </g>
         <g data-layer="nodes">
-          {state.nodes.map((n) => (
-            <g
-              key={n.id}
-              transform={`translate(${n.x},${n.y})`}
-              data-node-id={n.id}
-              onPointerDown={(e) => handlePointerDown(e, n.id, n.x, n.y)}
-              style={{ cursor: 'move' }}
-            >
-              <rect width={n.w} height={n.h} rx={6} ry={6} className="node-rect" />
-              <text className="node-label" x={n.w / 2} y={n.h / 2}>{n.type}</text>
-            </g>
-          ))}
+          {state.nodes.map((n) => {
+            const data: any = n.data || {};
+            const fill = data.backgroundColor || undefined;
+            const textFill = data.textColor || undefined;
+            const shape = data.shape || 'rect';
+            const corner = shape === 'rounded' ? 12 : 0;
+            const isEllipse = shape === 'ellipse';
+            return (
+              <g
+                key={n.id}
+                transform={`translate(${n.x},${n.y})`}
+                data-node-id={n.id}
+                onPointerDown={(e) => { dispatch(new SetSelection([n.id])); handlePointerDown(e, n.id, n.x, n.y); }}
+                className={isSelected(n.id) ? 'node selected' : 'node'}
+                tabIndex={0}
+                role="group"
+                aria-label={`Node ${data.text || n.type}`}
+                onFocus={() => { if (!isSelected(n.id)) dispatch(new SetSelection([n.id])); }}
+                data-node-bg={fill || undefined}
+                data-node-text={textFill || undefined}
+              >
+                {isEllipse ? (
+                  <ellipse cx={n.w/2} cy={n.h/2} rx={n.w/2} ry={n.h/2} className="node-rect" fill={fill || undefined} />
+                ) : (
+                  <rect width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
+                )}
+                <text className="node-label" x={n.w / 2} y={n.h / 2} fill={textFill || undefined}>{String(data.text || n.type)}</text>
+              </g>
+            );
+          })}
         </g>
         <g data-layer="overlays" />
       </svg>

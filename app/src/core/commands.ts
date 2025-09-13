@@ -141,6 +141,46 @@ export class MoveNode implements Command {
   }
 }
 
+export class SetSelection implements Command {
+  name = 'setSelection';
+  private ids: string[];
+  constructor(ids: string[]) { this.ids = [...ids]; }
+  execute(state: DiagramState) {
+    return { state: { ...state, selection: [...this.ids] } };
+  }
+  invert(prev: DiagramState) { return new SetSelection(prev.selection); }
+}
+
+export interface UpdateNodePropsPayload {
+  id: string;
+  changes: Partial<Pick<DiagramNode, 'type' | 'data'>> & { data?: Record<string, unknown> };
+}
+
+export class UpdateNodeProps implements Command {
+  name = 'updateNodeProps';
+  private payload: UpdateNodePropsPayload;
+  constructor(payload: UpdateNodePropsPayload) { this.payload = payload; }
+  execute(state: DiagramState) {
+    const { id, changes } = this.payload;
+    const nodes = state.nodes.map(n => {
+      if (n.id !== id) return n;
+      const mergedData = changes.data ? { ...(n.data || {}), ...changes.data } : n.data;
+      return { ...n, ...changes, data: mergedData };
+    });
+    return { state: { ...state, nodes } };
+  }
+  invert(prev: DiagramState, next: DiagramState) {
+    const before = prev.nodes.find(n => n.id === this.payload.id);
+    const after = next.nodes.find(n => n.id === this.payload.id);
+    if (!before || !after) return undefined;
+    const diff: any = {};
+    (['type','data'] as const).forEach(k => {
+      if (JSON.stringify(before[k]) !== JSON.stringify(after[k])) diff[k] = before[k];
+    });
+    return new UpdateNodeProps({ id: this.payload.id, changes: diff });
+  }
+}
+
 export class ReplaceState implements Command {
   name = 'replaceState';
   private nextState: DiagramState;

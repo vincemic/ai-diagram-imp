@@ -39,7 +39,7 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 | Area | Description |
 |------|-------------|
 | Toolbar (top) | Buttons for New, Import, Add Node, Export JSON, Export JPEG, Undo, Redo. |
-| Sidebar (left) | Placeholder properties panel (shows "No selection"). |
+| Sidebar (left) | Properties panel (auto shows details for selected node, otherwise "No selection"). |
 | Canvas (center) | Large scrollable area containing the diagram SVG and nodes. |
 | Splash Screen | (Production or forced) Brief logo screen at launch, fades out automatically. |
 
@@ -48,7 +48,12 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 Current interactions:
 
 - Click **Add Node** to append a new node at a default position (x=100, y=80) labelled with its `type` (default "start").
-- Drag a node: press and hold on the node rectangle, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y`.
+- **Select a node** by clicking it; selection highlight appears (accent stroke). Click empty canvas to clear selection and hide the property pane.
+- **Edit properties**: With a node selected, the sidebar shows a pane where you can modify:
+  - Text label (stored in `node.data.text`; falls back to `type` if empty)
+  - Shape (rectangle, rounded, ellipse)
+  - Text color / background color
+- Drag a node: press and hold on the node shape, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y` and any updated `data` fields.
 - Use **New** to reset to a blank diagram (title set to "Untitled Diagram").
 
 ## 5. Importing JSON
@@ -139,18 +144,24 @@ Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log
 |----------|--------|
 | Ctrl/Cmd + Z | Undo |
 | Ctrl + Y or Ctrl/Cmd + Shift + Z | Redo |
+| Tab / Shift + Tab | Cycle forward / backward through nodes (select) |
+| Arrow Keys | Nudge selected node (10px) |
+| Ctrl/Cmd + Arrow Keys | Fine nudge selected node (1px) |
+| Delete / Backspace | Delete selected node |
+| Esc | Clear selection |
+| Enter / F2 | Focus text field in property pane for quick edit |
 
 ## 12. Known Limitations
 
-- No node selection highlight or multi-select yet (drag works but does not indicate selection state).
-- No resizing or edge rendering yet.
+- Single selection only (no multi-select / marquee yet).
+- No node resizing or edge rendering yet.
 - No persistence beyond manual export/import (in‑memory only).
 - Single theme; dark only.
-- No accessibility pass beyond basic landmarks and button semantics.
+- Limited accessibility review (improvements planned for keyboard nav & ARIA labelling of nodes and property form).
 
 ## 13. Roadmap Ideas (Non-binding)
 
-- Selection visuals & multi-select drag.
+- Multi-select & selection rectangle.
 - Edge creation and routing with arrows.
 - Zoom & pan controls.
 - Multiple themes & light mode.
