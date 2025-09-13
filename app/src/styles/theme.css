@@ -129,8 +129,8 @@ button:hover { background: var(--color-accent); border-color: var(--color-accent
 .toolbar-gh-link:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 .diagram { background: #20252b; }
-.node-rect { stroke: #4b5a69; stroke-width: 1; }
-.node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; pointer-events: none; }
+.node-rect { stroke: #4b5a69; stroke-width: 1; fill: #cfe8ff; }
+.node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; pointer-events: none; fill: #ffffff; }
 .node.selected .node-rect { stroke: var(--color-accent); stroke-width: 2; }
 
 /* Edges */

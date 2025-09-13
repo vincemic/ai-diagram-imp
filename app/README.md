@@ -45,3 +45,21 @@ Open <http://localhost:5173> (default Vite port).
 ## License
 
 (Define licensing here if needed.)
+
+## Screenshots (Documentation Assets)
+
+These screenshots are generated automatically via Playwright for inclusion in the root project `README.md`.
+
+| Node Shape Variety | Selected Node with Property Pane |
+|--------------------|----------------------------------|
+| ![Diagram showing multiple nodes with varied shapes (square, triangle, star, ellipse, rectangle) laid out on canvas](./screenshots/readme-overview.png) | ![Selected node with properties panel open displaying editable fields including text input and shape selector](./screenshots/readme-property-pane.png) |
+
+### Regenerating
+
+From `app/` (dev server not required for these since test starts it implicitly if configured to):
+
+```powershell
+npx playwright test tests/e2e/readme-screenshots.spec.ts
+```
+
+The output images are written to `app/screenshots/`.
