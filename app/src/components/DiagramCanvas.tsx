@@ -289,16 +289,18 @@ export const DiagramCanvas: React.FC = () => {
                   <rect data-shape={shape} width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
                 )}
                 <text className="node-label" x={n.w / 2} y={textY} fill={textFill || undefined}>{String(data.text || n.type)}</text>
-                <circle
-                  className="connection-handle"
-                  cx={n.w - 8}
-                  cy={n.h / 2}
-                  r={6}
-                  onPointerDown={(e) => startConnection(e, n.id)}
-                  fill="#fff"
-                  stroke="#555"
-                  strokeWidth={1}
-                />
+                {isSelected(n.id) && (
+                  <circle
+                    className="connection-handle"
+                    cx={n.w / 2}
+                    cy={n.h / 2}
+                    r={6}
+                    onPointerDown={(e) => startConnection(e, n.id)}
+                    fill="#fff"
+                    stroke="#555"
+                    strokeWidth={1}
+                  />
+                )}
               </g>
             );
           })}

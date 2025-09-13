@@ -131,7 +131,8 @@ button:hover { background: var(--color-accent); border-color: var(--color-accent
 .diagram { background: #20252b; }
 .node-rect { stroke: #4b5a69; stroke-width: 1; fill: #cfe8ff; }
 .node-label { font-size: 12px; dominant-baseline: middle; text-anchor: middle; pointer-events: none; fill: #ffffff; }
-.node.selected .node-rect { stroke: var(--color-accent); stroke-width: 2; }
+.node.selected .node-rect { stroke: var(--color-accent); stroke-width: 2; stroke-dasharray: 5 3; }
+.diagram g.node:focus { outline: none; }
 
 /* Edges */
 .edge path { cursor: pointer; transition: stroke 160ms ease, stroke-width 160ms ease; }
@@ -143,6 +144,7 @@ button:hover { background: var(--color-accent); border-color: var(--color-accent
   stroke: #444;
   fill: #ffffff;
   vector-effect: non-scaling-stroke;
+  transition: fill 120ms ease, stroke 120ms ease;
 }
 .connection-handle:hover {
   fill: #e0e0e0;
