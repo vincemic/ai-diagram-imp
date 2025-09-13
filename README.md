@@ -6,6 +6,8 @@ AI Diagram Imp web-based diagram generator scaffold (architecture docs, React+Vi
 
 Now supports basic drag-and-drop repositioning of nodes; updated coordinates persist in exported JSON.
 
+Properties Sidebar: The properties panel now slides in only when a node is selected and includes a focus trap so Tab / Shift+Tab stay within the panel fields until you press Esc or click the canvas.
+
 ➡ For end-user instructions see: [User Guide](./USER_GUIDE.md)
 
 ## Example Screenshots

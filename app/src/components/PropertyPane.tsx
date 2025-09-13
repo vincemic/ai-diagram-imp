@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { useDiagramStore, selectDiagramState, selectDispatch } from '../core/store.js';
 import { UpdateNodeProps } from '../core/commands.js';
 
@@ -23,8 +23,39 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
     dispatch(new UpdateNodeProps({ id: node.id, changes: { ...typeChange, data: newData } }));
   }, [dispatch, node, data]);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Focus trap when pane active
+  useEffect(() => {
+    if (!active || !node) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(el.querySelectorAll<HTMLElement>('input, select, button, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter(f => !f.hasAttribute('disabled') && f.tabIndex !== -1);
+      if (!focusables.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      const activeEl = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (activeEl === first || !el.contains(activeEl)) {
+          last.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (activeEl === last) {
+          first.focus();
+          e.preventDefault();
+        }
+      }
+    };
+    el.addEventListener('keydown', handleKey);
+    return () => el.removeEventListener('keydown', handleKey);
+  }, [active, node]);
+
   return (
-  <div className="property-pane" data-testid="property-pane" aria-hidden={( !active || !node ) ? 'true' : 'false'}>
+  <div ref={containerRef} className="property-pane" data-testid="property-pane" aria-hidden={(!active || !node)}>
       {node && (
         <>
           <fieldset>
@@ -44,8 +75,11 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
               Shape
               <select data-testid="prop-shape" value={data.shape || 'rect'} onChange={e => update({ shape: e.target.value })}>
                 <option value="rect">Rectangle</option>
+                <option value="square">Square</option>
                 <option value="rounded">Rounded</option>
                 <option value="ellipse">Ellipse</option>
+                <option value="triangle">Triangle</option>
+                <option value="star">Star</option>
               </select>
             </label>
           </fieldset>

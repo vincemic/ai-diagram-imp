@@ -58,12 +58,20 @@ body { background: var(--color-bg); color: var(--color-text); }
 .toolbar { position: sticky; top: 0; z-index: 10; display: flex; gap: 8px; align-items: center; height: var(--toolbar-height); padding: 0 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
 /* Workspace fills remaining space under toolbar */
 .workspace { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-.sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); padding: 12px; box-sizing: border-box; overflow: hidden; position: relative; }
+.sidebar { width: 260px; background: var(--color-surface); border-left: 1px solid var(--color-border); padding: 12px; box-sizing: border-box; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.sidebar-title { margin: 0 0 8px; font-size: 14px; letter-spacing: 0.5px; }
+.sidebar.is-collapsed .property-pane-outer { display: block; }
+.workspace { position: relative; }
+.sidebar { position: absolute; top: 0; right: 0; bottom: 0; z-index: 20; display: flex; flex-direction: column; width: 260px; transition: transform 240ms ease, opacity 240ms ease; background: var(--color-surface); }
+.workspace[data-sidebar-open="false"] .sidebar { transform: translateX(100%); opacity: 0; pointer-events: none; }
+.workspace[data-sidebar-open="true"] .sidebar { transform: translateX(0); opacity: 1; pointer-events: auto; }
+.sidebar-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 4px; padding: 8px; box-sizing: border-box; transform: translateX(0); opacity: 1; transition: transform 220ms ease, opacity 220ms ease; }
+.sidebar-panel.is-closed { transform: translateX(-12px); opacity: 0; pointer-events: none; }
+.sidebar-placeholder { margin-top: 4px; font-size: 12px; opacity: 0.7; }
 /* Property pane slide behavior */
 .sidebar .property-pane-wrapper { position: relative; }
 .property-pane-slide-container { position: relative; }
-.property-pane-shell { transform: translateX(0); transition: transform 220ms ease-in-out, opacity 220ms ease-in-out; opacity: 1; will-change: transform, opacity; }
-.property-pane-shell.is-hidden { transform: translateX(8px); opacity: 0; pointer-events: none; }
+.property-pane-shell { transition: opacity 160ms ease; }
 /* Only the diagram canvas scrolls; allow large diagrams */
 .diagram-canvas { flex: 1; position: relative; overflow: auto; }
 /* The SVG should size to content; prevent forced stretch so scroll works */

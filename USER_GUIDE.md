@@ -39,7 +39,7 @@ This replaces the in‑memory diagram state; it does not overwrite files.
 | Area | Description |
 |------|-------------|
 | Toolbar (top) | Buttons for New, Import, Add Node, Export JSON, Export JPEG, Undo, Redo. |
-| Sidebar (left) | Properties panel (auto shows details for selected node, otherwise "No selection"). |
+| Sidebar (left) | Sliding Properties panel (overlays diagram when open; when no node is selected it is fully hidden and the canvas uses the full width). |
 | Canvas (center) | Large scrollable area containing the diagram SVG and nodes. |
 | Splash Screen | (Production or forced) Brief logo screen at launch, fades out automatically. |
 
@@ -139,18 +139,21 @@ npx playwright test tests/e2e/screenshots.spec.ts
 
 Validation uses AJV (JSON Schema 2020-12). Invalid imports show an alert and log errors to the console.
 
-## 11. Keyboard Shortcuts
+## 11. Keyboard Shortcuts & Focus Behavior
 
 | Shortcut | Action |
 |----------|--------|
 | Ctrl/Cmd + Z | Undo |
 | Ctrl + Y or Ctrl/Cmd + Shift + Z | Redo |
-| Tab / Shift + Tab | Cycle forward / backward through nodes (select) |
+| Tab / Shift + Tab | Cycle forward / backward through nodes (selection changes) when focus is NOT inside the property pane form |
 | Arrow Keys | Nudge selected node (10px) |
 | Ctrl/Cmd + Arrow Keys | Fine nudge selected node (1px) |
 | Delete / Backspace | Delete selected node |
-| Esc | Clear selection |
+| Esc | Clear selection (also closes sliding panel) |
 | Enter / F2 | Focus text field in property pane for quick edit |
+
+### Focus Trap
+When the properties panel is open and focus is inside it, `Tab` / `Shift+Tab` cycles only through the interactive fields within the panel (focus trap). Press `Esc` to exit (deselect) and return to canvas/node navigation; subsequent `Tab` resumes global node cycling.
 
 ## 12. Known Limitations
 

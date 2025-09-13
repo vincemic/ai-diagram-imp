@@ -71,6 +71,18 @@ export const DiagramCanvas: React.FC = () => {
             const shape = data.shape || 'rect';
             const corner = shape === 'rounded' ? 12 : 0;
             const isEllipse = shape === 'ellipse';
+            const isSquare = shape === 'square';
+            const isTriangle = shape === 'triangle';
+            const isStar = shape === 'star';
+            const squareSide = Math.min(n.w, n.h);
+            const textY = (() => {
+              if (isTriangle) {
+                // Centroid of current triangle (points at (w/2,0) and base at y=h) is at 2h/3.
+                return (2 * n.h) / 3;
+              }
+              return n.h / 2;
+            })();
+
             return (
               <g
                 key={n.id}
@@ -86,12 +98,39 @@ export const DiagramCanvas: React.FC = () => {
                 data-node-text={textFill || undefined}
                 data-node-selected={isSelected(n.id) ? 'true' : undefined}
               >
-                {isEllipse ? (
-                  <ellipse cx={n.w/2} cy={n.h/2} rx={n.w/2} ry={n.h/2} className="node-rect" fill={fill || undefined} />
-                ) : (
-                  <rect width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
+                {isEllipse && (
+                  <ellipse data-shape="ellipse" cx={n.w/2} cy={n.h/2} rx={n.w/2} ry={n.h/2} className="node-rect" fill={fill || undefined} />
                 )}
-                <text className="node-label" x={n.w / 2} y={n.h / 2} fill={textFill || undefined} pointerEvents="none">{String(data.text || n.type)}</text>
+                {isSquare && !isEllipse && (
+                  <rect
+                    data-shape="square"
+                    x={(n.w - squareSide) / 2}
+                    y={(n.h - squareSide) / 2}
+                    width={squareSide}
+                    height={squareSide}
+                    className="node-rect"
+                    fill={fill || undefined}
+                  />
+                )}
+                {isTriangle && !isEllipse && (
+                  <polygon
+                    data-shape="triangle"
+                    className="node-rect"
+                    points={`${n.w/2},0 ${n.w},${n.h} 0,${n.h}`}
+                    fill={fill || undefined}
+                  />
+                )}
+                {isStar && !isEllipse && (
+                  (() => {
+                    const w = n.w; const h = n.h; const cx = w/2; const cy = h/2; const outer = Math.min(w,h)/2; const inner = outer*0.45; const pts: string[] = [];
+                    for (let i=0;i<10;i++) { const ang = (Math.PI/5)*i - Math.PI/2; const r = i%2===0?outer:inner; pts.push(`${cx + r*Math.cos(ang)},${cy + r*Math.sin(ang)}`); }
+                    return <polygon data-shape="star" className="node-rect" points={pts.join(' ')} fill={fill || undefined} />;
+                  })()
+                )}
+                {!isEllipse && !isSquare && !isTriangle && !isStar && (
+                  <rect data-shape={shape} width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
+                )}
+                <text className="node-label" x={n.w / 2} y={textY} fill={textFill || undefined}>{String(data.text || n.type)}</text>
               </g>
             );
           })}
