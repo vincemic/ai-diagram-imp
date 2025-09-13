@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['tests/unit/**/*.spec.ts'],
+  include: ['tests/unit/**/*.spec.ts', 'src/tests/unit/**/*.spec.ts'],
     coverage: {
       enabled: false
     }

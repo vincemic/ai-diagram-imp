@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useDiagramStore, selectDispatch, selectManager } from '../core/store.js';
 import { ReplaceState, AddNode } from '../core/commands.js';
+import { toGraphML, fromGraphML } from '../core/graphml.js';
 import { validateDiagram } from '../model/validateDiagram.js';
 import { exportCurrentViewAsJPEG, exportCurrentViewAsPNG } from '../core/exportJPEG.js';
 import { updatePreferences } from '../core/preferences.js';
@@ -92,12 +93,54 @@ export const Toolbar: React.FC = () => {
     fileInputRef.current.click();
   };
 
+  const handleExportGraphML = () => {
+    const xml = toGraphML(manager.state);
+    const blob = new Blob([xml], { type: 'application/xml' });
+    const a = document.createElement('a');
+    a.download = (manager.state.metadata?.title || 'diagram') + '.graphml';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+
+  const handleImportGraphML = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.graphml,application/xml,text/xml';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const { diagram, warnings } = fromGraphML(text);
+        const result = validateDiagram(diagram);
+        if (result.valid) {
+          dispatch(new ReplaceState(diagram));
+          if (diagram?.metadata?.title) updatePreferences(p => ({ ...p, lastOpenedTitle: diagram.metadata.title }));
+          if (warnings.length) {
+            console.warn('GraphML import warnings:', warnings);
+            alert('Imported with warnings. See console for details.');
+          }
+        } else {
+          alert('Imported GraphML failed validation. See console.');
+          console.error('Validation errors', result.errors);
+        }
+      } catch (e) {
+        alert('Failed to import GraphML');
+        console.error(e);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="toolbar" data-testid="toolbar">
       <HamburgerMenu>
         <button type="button" onClick={handleNew}>New</button>
         <button type="button" onClick={handleImportClick}>Import</button>
-        <button type="button" onClick={handleExportJSON}>Export JSON</button>
+  <button type="button" onClick={handleExportJSON}>Export JSON</button>
+  <button type="button" onClick={handleExportGraphML}>Export GraphML (Beta)</button>
+  <button type="button" onClick={handleImportGraphML}>Import GraphML (Beta)</button>
         <button type="button" onClick={handleExportPNG}>Export PNG</button>
         <button type="button" onClick={handleExportJPEG}>Export JPEG</button>
       </HamburgerMenu>

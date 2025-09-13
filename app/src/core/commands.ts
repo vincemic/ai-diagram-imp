@@ -100,6 +100,7 @@ export class AddNode implements Command {
         const data = { ...(node.data || {}) } as Record<string, unknown>;
         if (data.textColor === undefined) data.textColor = '#000000';
         if (data.backgroundColor === undefined) data.backgroundColor = '#ADD8E6';
+        if (data.shape === undefined) data.shape = 'rect';
         return data;
       })()
     };

@@ -74,12 +74,15 @@ export const DiagramCanvas: React.FC = () => {
             const isSquare = shape === 'square';
             const isTriangle = shape === 'triangle';
             const isStar = shape === 'star';
+            const isDiamond = shape === 'diamond';
+            const isParallelogram = shape === 'parallelogram';
+            const isTrapezoid = shape === 'trapezoid';
+            const isHexagon = shape === 'hexagon';
+            const isOctagon = shape === 'octagon';
+            const isCylinder = shape === 'cylinder';
             const squareSide = Math.min(n.w, n.h);
             const textY = (() => {
-              if (isTriangle) {
-                // Centroid of current triangle (points at (w/2,0) and base at y=h) is at 2h/3.
-                return (2 * n.h) / 3;
-              }
+              if (isTriangle) return (2 * n.h) / 3;
               return n.h / 2;
             })();
 
@@ -120,6 +123,50 @@ export const DiagramCanvas: React.FC = () => {
                     fill={fill || undefined}
                   />
                 )}
+                {isDiamond && !isEllipse && (
+                  <polygon
+                    data-shape="diamond"
+                    className="node-rect"
+                    points={`${n.w/2},0 ${n.w},${n.h/2} ${n.w/2},${n.h} 0,${n.h/2}`}
+                    fill={fill || undefined}
+                  />
+                )}
+                {isParallelogram && !isEllipse && (
+                  (() => {
+                    const skew = Math.min(n.w * 0.25, 30);
+                    return <polygon data-shape="parallelogram" className="node-rect" points={`${skew},0 ${n.w},0 ${n.w - skew},${n.h} 0,${n.h}`} fill={fill || undefined} />;
+                  })()
+                )}
+                {isTrapezoid && !isEllipse && (
+                  (() => {
+                    const topInset = Math.min(n.w * 0.2, 40);
+                    const bottomInset = Math.min(n.w * 0.05, 20);
+                    return <polygon data-shape="trapezoid" className="node-rect" points={`${topInset},0 ${n.w - topInset},0 ${n.w - bottomInset},${n.h} ${bottomInset},${n.h}`} fill={fill || undefined} />;
+                  })()
+                )}
+                {isHexagon && !isEllipse && (
+                  (() => {
+                    const inset = n.w * 0.2;
+                    return <polygon data-shape="hexagon" className="node-rect" points={`${inset},0 ${n.w - inset},0 ${n.w},${n.h/2} ${n.w - inset},${n.h} ${inset},${n.h} 0,${n.h/2}`} fill={fill || undefined} />;
+                  })()
+                )}
+                {isOctagon && !isEllipse && (
+                  (() => {
+                    const cut = Math.min(n.w, n.h) * 0.2;
+                    const w = n.w, h = n.h;
+                    return <polygon data-shape="octagon" className="node-rect" points={`${cut},0 ${w - cut},0 ${w},${cut} ${w},${h - cut} ${w - cut},${h} ${cut},${h} 0,${h - cut} 0,${cut}`} fill={fill || undefined} />;
+                  })()
+                )}
+                {isCylinder && !isEllipse && (
+                  (() => {
+                    const rx = n.w / 2;
+                    const ry = Math.min(n.h * 0.18, n.w * 0.25);
+                    const top = ry;
+                    const bottom = n.h - ry;
+                    const d = `M0 ${top} Q0 0 ${rx} 0 Q${n.w} 0 ${n.w} ${top} L${n.w} ${bottom} Q${n.w} ${n.h} ${rx} ${n.h} Q0 ${n.h} 0 ${bottom} Z`;
+                    return <path data-shape="cylinder" className="node-rect" d={d} fill={fill || undefined} />;
+                  })()
+                )}
                 {isStar && !isEllipse && (
                   (() => {
                     const w = n.w; const h = n.h; const cx = w/2; const cy = h/2; const outer = Math.min(w,h)/2; const inner = outer*0.45; const pts: string[] = [];
@@ -127,7 +174,7 @@ export const DiagramCanvas: React.FC = () => {
                     return <polygon data-shape="star" className="node-rect" points={pts.join(' ')} fill={fill || undefined} />;
                   })()
                 )}
-                {!isEllipse && !isSquare && !isTriangle && !isStar && (
+                {!isEllipse && !isSquare && !isTriangle && !isStar && !isDiamond && !isParallelogram && !isTrapezoid && !isHexagon && !isOctagon && !isCylinder && (
                   <rect data-shape={shape} width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
                 )}
                 <text className="node-label" x={n.w / 2} y={textY} fill={textFill || undefined}>{String(data.text || n.type)}</text>

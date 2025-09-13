@@ -75,10 +75,16 @@ export const PropertyPane: React.FC<PropertyPaneProps> = ({ active }) => {
               Shape
               <select data-testid="prop-shape" value={data.shape || 'rect'} onChange={e => update({ shape: e.target.value })}>
                 <option value="rect">Rectangle</option>
+                <option value="rounded">Rounded Rectangle</option>
                 <option value="square">Square</option>
-                <option value="rounded">Rounded</option>
-                <option value="ellipse">Ellipse</option>
+                <option value="ellipse">Ellipse / Circle</option>
                 <option value="triangle">Triangle</option>
+                <option value="parallelogram">Parallelogram</option>
+                <option value="trapezoid">Trapezoid</option>
+                <option value="diamond">Diamond</option>
+                <option value="hexagon">Hexagon</option>
+                <option value="octagon">Octagon</option>
+                <option value="cylinder">Cylinder</option>
                 <option value="star">Star</option>
               </select>
             </label>
