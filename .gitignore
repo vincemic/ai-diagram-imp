@@ -26,6 +26,13 @@ coverage/
 playwright-report/
 blob-report/
 trace.zip
+test-results/
+app/test-results/
+app/tests/e2e/.cache/
+
+# Generated screenshots (retain curated ones explicitly if needed)
+app/screenshots/*.png
+!app/screenshots/README.md
 
 # Misc
 .DS_Store
