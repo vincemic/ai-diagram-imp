@@ -510,3 +510,140 @@ Prioritized shortlist distilled from broader backlog to guide the next iteration
 
 ---
 Decision heuristic for selecting next task: If user feedback centers on usability -> start with 15.1; if stability/interop -> 15.4 + 15.6; if performance concerns emerge -> 15.5 + 15.14 first.
+
+## 16. Short-Term Execution Recommendations (Actionable Sprints)
+
+This section distills Sections 13–15 into concrete, time-boxed sprint candidates with priority labels:
+
+- P1 = Highest leverage / unblock core UX or reliability
+- P2 = Important enhancement / quality
+- P3 = Opportunistic / can slip without major impact
+
+### 16.1 Sprint Candidate A (Edge UX Foundations) – P1
+
+Objective: Make edges first-class citizens (selectable, editable) to validate modeling beyond node-only scenarios.
+
+Tasks:
+
+1. Edge selection model (extend `selection[]`: adopt `edge:<id>` convention) – update keyboard nav to skip mixing semantics for now.
+2. Hit area path: duplicate path with `stroke="transparent" stroke-width=12` for easier pointer capture.
+3. Visual selection style: thicker stroke + glow (CSS filter or duplicated stroke).
+4. Delete key handling for selected edge(s).
+5. Property pane conditional mode for a single selected edge: fields `label`, `arrowTarget` (reuse existing arrow select), read-only endpoints summary.
+6. Update GraphML doc & user guide describing new interaction.
+7. Unit + e2e tests: create edge, select, delete, undo/redo.
+
+Acceptance: User can create, select, label, delete edges; undo/redo works; GraphML round-trip preserves label & arrow target.
+
+### 16.2 Sprint Candidate B (Import/Warning Quality) – P1
+
+Objective: Improve trust in import/export by surfacing structured warnings.
+
+Tasks:
+
+1. Aggregate import stats into a single `ImportReport` object.
+2. Toast / panel component to display summary (counts + first N messages, expandable to full list).
+3. Replace `alert()` usage in GraphML import path.
+4. Add pre-scan security check for `<!DOCTYPE` and abort early (log + friendly message).
+5. Unit tests: pre-scan rejection, aggregated stats formatting.
+
+Acceptance: Imports never block with modal alert; user sees concise summary; security pre-scan rejects DOCTYPE samples.
+
+### 16.3 Sprint Candidate C (Performance & Scale Baseline) – P2
+
+Objective: Establish performance benchmarks before complexity increases.
+
+Tasks:
+
+1. Synthetic generator (`scripts/genLargeGraph.ts`): parameters nodes, edges, options for shapes/styling density.
+2. Benchmark harness: measure `toGraphML`, `fromGraphML`, and UI mount (optional) – log JSON results.
+3. Add CI job (optional follow-up) to run reduced-size benchmark (e.g., 1k nodes) to catch regressions heuristically.
+4. Document baseline numbers in `PERF_NOTES.md`.
+
+Acceptance: Have reproducible timing data and script checked in; future PRs can compare.
+
+### 16.4 Sprint Candidate D (Edge Styling UI Minimal) – P2
+
+Objective: Let users adjust visual distinction between edges beyond arrowheads.
+
+Tasks:
+
+1. Extend edge property pane (after Candidate A) with stroke color picker & width slider.
+2. Dropdown for line style (solid/dashed/dotted) writing to `edge.data.lineStyle` unless custom dash set.
+3. Live preview debounced 120ms; undo groups changes (optional advanced) else single commands.
+4. GraphML round-trip test ensuring styling keys persist.
+5. Accessibility: contrast check fallback if chosen stroke too low against background (warn indicator).
+
+Acceptance: User can restyle an edge and see changes persist after export/import.
+
+### 16.5 Sprint Candidate E (Bend Points MVP) – P2
+
+Objective: Introduce manual path shaping without full routing engine.
+
+Tasks:
+
+1. On edge selection with modifier (e.g., Alt+Click) insert bend point at cursor along current path.
+2. Render draggable handles for bend points (hit radius > visual radius).
+3. Drag updates `bendPoints` in state; snap to 90° when Shift pressed.
+4. Delete bend (Backspace when handle focused or context action).
+5. Export/import test with multiple bends.
+
+Acceptance: User can insert, move, remove bends; GraphML shows `d_edgeBendPoints` JSON.
+
+### 16.6 Sprint Candidate F (Label Placement Enhancement) – P3
+
+Objective: Improve readability for multi-segment edges.
+
+Tasks:
+
+1. Compute path length & midpoint using SVG `getTotalLength()` / `getPointAtLength()` (fallback to centroid on error).
+2. Cache length & midpoint per edge unless geometry changes.
+3. Adjust text anchor alignment to avoid overlap with arrowhead (offset vector along tangent).
+4. Test: label for polyline not at raw centroid.
+
+Acceptance: Multi-bend labels appear centered along actual drawn line.
+
+### 16.7 Sprint Candidate G (Security & Robustness Hardening) – P3
+
+Objective: Defense-in-depth around input handling.
+
+Tasks:
+
+1. File size threshold (configurable) – warn if exceeding soft limit, abort at hard limit.
+2. Character whitelist / blacklist scan (e.g., reject NUL bytes).
+3. Add fuzz test harness (generate mutated GraphML snippets) verifying no crashes & bounded warnings.
+
+Acceptance: Malicious or oversized inputs are rejected gracefully with clear messaging.
+
+### 16.8 Priority Matrix Summary
+
+| Candidate | Priority | Core Value | Risk Reduction | Effort (est) |
+|-----------|----------|------------|----------------|--------------|
+| A Edge UX | P1 | High (usability) | Medium | M |
+| B Import UX | P1 | High (trust) | High | S-M |
+| C Perf Baseline | P2 | Medium (future-proof) | High | S |
+| D Styling UI | P2 | Medium (visual clarity) | Low | S-M |
+| E Bend Points | P2 | Medium (layout control) | Medium | M |
+| F Label Placement | P3 | Low-Med | Low | S |
+| G Security Hardening | P3 | Medium | High | M |
+
+Legend Effort: S (≤1 day), M (2–3 days), L (week+)
+
+### 16.9 Recommended Order of Execution
+
+1. A (Edge UX Foundations)
+2. B (Import/Warning Quality)
+3. C (Performance Baseline)
+4. D (Edge Styling UI)
+5. E (Bend Points MVP)
+6. F (Label Placement)
+7. G (Security Hardening) – can move earlier if external file ingest increases.
+
+### 16.10 Tracking & Metrics Hooks
+
+- Count edges created, selected, deleted (telemetry stub) to validate feature usage.
+- Measure import/export timings aggregated over session (perf panel).
+- Warning category counts to prioritize parser resilience work.
+
+---
+Section 16 added 2025-09-12.
