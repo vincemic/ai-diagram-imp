@@ -439,3 +439,74 @@ These build upon the newly added edge styling and rendering layer.
 ---
 
 Section 14 added 2025-09-12.
+
+## 15. Immediate Next Options (Post Edge Rendering)
+
+Prioritized shortlist distilled from broader backlog to guide the next iteration. Each item is scoped to be shippable independently.
+
+### 15.1 Edge Interaction & Editing (High Value)
+
+- Select edges (hit area + visual highlight) and allow Delete key removal.
+- Add basic edge property editing (target arrowhead, label text) in existing property pane when an edge is selected.
+- Provide focusable edge elements with ARIA labels.
+
+### 15.2 Edge Styling UI (Incremental)
+
+- Add inputs for stroke color, stroke width, line style (solid / dashed / dotted) in property pane.
+- Persist changes immediately to `edge.data` (debounced) and ensure GraphML round-trip.
+
+### 15.3 Label Placement Improvement
+
+- Compute label position via path length midpoint instead of geometric centroid.
+- Fallback to centroid if path length computation fails.
+
+### 15.4 Warning Aggregation UX
+
+- Replace multiple `alert()` calls with a single in-app non-blocking toast listing counts and first N warnings.
+- Surface import stats (invalid colors, widths, missingShape, vendorNamespaces) in a collapsible panel.
+
+### 15.5 Large Graph Benchmark Harness
+
+- Script: generate synthetic graph (N nodes, M edges) and measure export + import timing.
+- Output JSON summary (counts, durations) for regression tracking.
+
+### 15.6 Property-Based Round-Trip Tests
+
+- Random diagram generator (bounded sizes, random shapes, optional strokes, edge styles).
+- Assert structural invariants after `fromGraphML(toGraphML(state))`.
+
+### 15.7 Security Pre-Scan
+
+- Pre-parse string scan rejecting files containing `<!DOCTYPE` or external entity declarations before DOMParser.
+
+### 15.8 Bend Point Authoring (Minimal)
+
+- Enable adding manual bend points (double-click to insert, drag to move, Delete to remove) updating `edge.data.bendPoints`.
+- Restrict initial implementation to straight routing.
+
+### 15.9 Routing Enhancements (Orthogonal MVP)
+
+- Simple orthogonal path generator that inserts one intermediate L or Z bend avoiding direct overlap with source/target node bounding boxes.
+
+### 15.10 Vendor Namespace Detection UI
+
+- When vendor namespaces detected, show a subtle badge (e.g., “Vendor extensions ignored”).
+
+### 15.11 Compression Option (Deferred Toggle)
+
+- Optional `.graphml.zip` export using JSZip behind feature flag; import support later.
+
+### 15.12 Documentation & Schema Sync
+
+- Update `USER_GUIDE` and schema version notes after implementing edge selection & editing.
+
+### 15.13 Accessibility Quick Wins
+
+- Ensure connection handle has accessible name (aria-label) and larger hit target (invisible outline) for users with motor challenges.
+
+### 15.14 Performance Guardrails
+
+- Memoize path `d` generation keyed by edge points + routing to avoid unnecessary re-renders for unchanged edges.
+
+---
+Decision heuristic for selecting next task: If user feedback centers on usability -> start with 15.1; if stability/interop -> 15.4 + 15.6; if performance concerns emerge -> 15.5 + 15.14 first.

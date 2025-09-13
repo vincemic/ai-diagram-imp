@@ -6,7 +6,7 @@
 
 AI Diagram Imp is a lightweight, early-stage web application for experimenting with diagram creation. It demonstrates a command-based state manager, schema validation, export features, automated screenshots, and testing scaffolding.
 
-Current focus: simple nodes rendered on an SVG canvas. (Edges are part of the schema but not yet visually rendered.) Supported shapes: rectangle, rounded rectangle, square, ellipse/circle, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder (pseudo), star.
+Current focus: nodes and basic directed edges rendered on an SVG canvas. You can draw connections between nodes, choose a target arrowhead style, and export/import them via GraphML or JSON. Supported shapes: rectangle, rounded rectangle, square, ellipse/circle, triangle, parallelogram, trapezoid, diamond, hexagon, octagon, cylinder (pseudo), star.
 
 ## 2. Quick Start
 
@@ -55,6 +55,8 @@ Current interactions:
   - Text color / background color
     - Defaults for newly added nodes: text color `#000000` (black), background color `#ADD8E6` (light blue)
 - Drag a node: press and hold on the node shape, move the pointer, release to set its new position. The diagram state updates live and any subsequent JSON export includes the new `x`/`y` and any updated `data` fields.
+- Create an edge: press on the small circular connection handle (right side of a node) and drag to another node. Release over a *different* node to create a directed edge. A dashed temporary guide line appears while dragging.
+- Target arrowhead: use the Arrow selector in the toolbar to change the default arrowhead style (None, Standard, Circle, Diamond, Tee) for newly created edges.
 - Use **New** (inside the hamburger menu) to reset to a blank diagram (title set to "Untitled Diagram").
 
 ## 5. Importing JSON
@@ -91,11 +93,11 @@ Recent Phase 3 additions:
 
 Limitations (Beta):
 
-- Directed edges only; edge visuals not rendered yet.
+- Directed edges only.
 - Grouping / nested graphs unsupported and skipped.
 - Vendor (yFiles/yWorks) extensions detected but ignored (future roadmap); any `<y:*>` blocks are not parsed.
 - Non-canonical shapes (e.g. triangle, star) currently exported as provided but *if imported* and not in canonical set they downgrade to `rect` with a warning.
-- Edge styling & labels not yet supported.
+  Basic edge styling fields (strokeColor, strokeWidth, lineStyle, dashPattern, arrowSource, arrowTarget, label, routing, bendPoints) round-trip in GraphML. UI currently exposes only target arrowhead (others use defaults).
 
 Exported Node Keys (subset):
 
@@ -166,12 +168,12 @@ npx playwright test tests/e2e/screenshots.spec.ts
 | `h` | number | Height (>=1) |
 | `data` | object | Arbitrary key/value (optional) |
 
-### Edge Object (Not yet rendered visually)
+### Edge Object
 
 | Field | Type | Notes |
 |-------|------|-------|
 | `id` | string | Unique identifier |
-| `type` | string | Reserved for future styling/semantics |
+| `type` | string | Reserved for future styling/semantics (currently "default") |
 | `source.nodeId` | string | Source node id |
 | `target.nodeId` | string | Target node id |
 
@@ -199,7 +201,7 @@ When the properties panel is open and focus is inside it, `Tab` / `Shift+Tab` cy
 ## 12. Known Limitations
 
 - Single selection only (no multi-select / marquee yet).
-- No node resizing or edge rendering yet.
+- No node resizing yet; limited live edge styling controls (only arrowhead target picker).
 - No persistence beyond manual export/import (in‑memory only).
 - Single theme; dark only.
 - Limited accessibility review (improvements planned for keyboard nav & ARIA labelling of nodes and property form).

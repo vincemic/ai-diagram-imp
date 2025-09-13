@@ -13,6 +13,10 @@ export const Toolbar: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const undo = useDiagramStore(s => s.undo);
   const redo = useDiagramStore(s => s.redo);
+  const [edgeArrow, setEdgeArrow] = React.useState<'none'|'standard'|'circle'|'diamond'|'tee'>('standard');
+  React.useEffect(() => {
+    (window as any).__defaultEdgeArrow = edgeArrow;
+  }, [edgeArrow]);
 
   // Keyboard shortcuts for undo/redo
   React.useEffect(() => {
@@ -152,6 +156,16 @@ export const Toolbar: React.FC = () => {
       <div className="toolbar-inline-actions">
         <button type="button" onClick={() => { undo(); }}>Undo</button>
         <button type="button" onClick={() => { redo(); }}>Redo</button>
+        <label className="edge-arrow-select">
+          <span className="edge-arrow-label">Arrow</span>
+          <select value={edgeArrow} onChange={e => setEdgeArrow(e.target.value as any)}>
+            <option value="none">None</option>
+            <option value="standard">Standard</option>
+            <option value="circle">Circle</option>
+            <option value="diamond">Diamond</option>
+            <option value="tee">Tee</option>
+          </select>
+        </label>
       </div>
     </div>
   );

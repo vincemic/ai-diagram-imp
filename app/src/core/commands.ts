@@ -129,6 +129,38 @@ export class RemoveNode implements Command {
   }
 }
 
+export class AddEdge implements Command {
+  name = 'addEdge';
+  private edge: DiagramEdge;
+  constructor(edge: Partial<DiagramEdge> & { source: { nodeId: string }; target: { nodeId: string } }) {
+    this.edge = {
+      id: edge.id ?? crypto.randomUUID(),
+      type: edge.type ?? 'default',
+      source: edge.source,
+      target: edge.target,
+      data: edge.data ? { ...edge.data } : undefined
+    };
+  }
+  execute(state: DiagramState) {
+    return { state: { ...state, edges: [...state.edges, this.edge] } };
+  }
+  invert(_prev: DiagramState) {
+    return new RemoveEdge(this.edge.id);
+  }
+}
+
+export class RemoveEdge implements Command {
+  name = 'removeEdge';
+  constructor(private id: string) {}
+  execute(state: DiagramState) {
+    return { state: { ...state, edges: state.edges.filter(e => e.id !== this.id) } };
+  }
+  invert(prev: DiagramState) {
+    const edge = prev.edges.find(e => e.id === this.id);
+    return edge ? new AddEdge(edge) : undefined;
+  }
+}
+
 export class MoveNode implements Command {
   name = 'moveNode';
   private id: string;

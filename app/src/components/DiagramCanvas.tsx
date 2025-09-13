@@ -1,11 +1,13 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import { useDiagramStore, selectDiagramState, selectDispatch } from '../core/store.js';
-import { MoveNode, SetSelection } from '../core/commands.js';
+import { MoveNode, SetSelection, AddEdge } from '../core/commands.js';
 
 export const DiagramCanvas: React.FC = () => {
   const state = useDiagramStore(selectDiagramState);
   const dispatch = useDiagramStore(selectDispatch);
   const draggingRef = useRef<null | { id: string; offsetX: number; offsetY: number }>(null);
+  const connectingRef = useRef<null | { sourceId: string; startX: number; startY: number }>(null);
+  const [tempEdge, setTempEdge] = useState<null | { sx: number; sy: number; tx: number; ty: number }>(null);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<SVGGElement>, id: string, x: number, y: number) => {
     const svg = (e.currentTarget.ownerSVGElement);
@@ -20,32 +22,61 @@ export const DiagramCanvas: React.FC = () => {
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (!draggingRef.current) return;
     const svg = e.currentTarget;
     const pt = svg.createSVGPoint();
     pt.x = e.clientX; pt.y = e.clientY;
     const ctm = svg.getScreenCTM();
     if (!ctm) return;
     const local = pt.matrixTransform(ctm.inverse());
-    const { id, offsetX, offsetY } = draggingRef.current;
-    // Optimistic update: directly mutate then dispatch final command on up? For simplicity dispatch on move throttled.
-    // Here we dispatch each move; in future could throttle.
-    const newX = local.x - offsetX;
-    const newY = local.y - offsetY;
-    dispatch(new MoveNode(id, newX, newY));
+    if (draggingRef.current) {
+      const { id, offsetX, offsetY } = draggingRef.current;
+      const newX = local.x - offsetX;
+      const newY = local.y - offsetY;
+      dispatch(new MoveNode(id, newX, newY));
+    } else if (connectingRef.current) {
+      setTempEdge(te => te ? { ...te, tx: local.x, ty: local.y } : null);
+    }
   }, [dispatch]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    if (draggingRef.current) {
-      draggingRef.current = null;
+    if (draggingRef.current) draggingRef.current = null;
+    if (connectingRef.current) {
+      // Determine if pointer is over a node to complete connection
+      const svg = e.currentTarget;
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = svg.getScreenCTM();
+      if (ctm) {
+        const local = pt.matrixTransform(ctm.inverse());
+        const targetNode = state.nodes.find(n => local.x >= n.x && local.x <= n.x + n.w && local.y >= n.y && local.y <= n.y + n.h);
+        const { sourceId } = connectingRef.current;
+        if (targetNode && targetNode.id !== sourceId) {
+          const defArrow = (window as any).__defaultEdgeArrow || 'standard';
+          dispatch(new AddEdge({ source: { nodeId: sourceId }, target: { nodeId: targetNode.id }, data: { arrowTarget: defArrow } }));
+        }
+      }
+      connectingRef.current = null;
+      setTempEdge(null);
     }
-  }, []);
+  }, [dispatch, state.nodes]);
 
   const handleBackgroundPointerDown = useCallback(() => {
     dispatch(new SetSelection([]));
   }, [dispatch]);
 
   const isSelected = (id: string) => state.selection.includes(id);
+
+  const startConnection = (e: React.PointerEvent, nodeId: string) => {
+    e.stopPropagation();
+    const svg = (e.currentTarget as any).ownerSVGElement as SVGSVGElement | null;
+    if (!svg) return;
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const sx = node.x + node.w / 2;
+    const sy = node.y + node.h / 2;
+    connectingRef.current = { sourceId: nodeId, startX: sx, startY: sy };
+    setTempEdge({ sx, sy, tx: sx, ty: sy });
+  };
 
   return (
     <div id="diagram-container" className="diagram-canvas" data-testid="diagram-container">
@@ -258,11 +289,26 @@ export const DiagramCanvas: React.FC = () => {
                   <rect data-shape={shape} width={n.w} height={n.h} rx={corner} ry={corner} className="node-rect" fill={fill || undefined} />
                 )}
                 <text className="node-label" x={n.w / 2} y={textY} fill={textFill || undefined}>{String(data.text || n.type)}</text>
+                <circle
+                  className="connection-handle"
+                  cx={n.w - 8}
+                  cy={n.h / 2}
+                  r={6}
+                  onPointerDown={(e) => startConnection(e, n.id)}
+                  fill="#fff"
+                  stroke="#555"
+                  strokeWidth={1}
+                />
               </g>
             );
           })}
         </g>
         <g data-layer="overlays" />
+        {tempEdge && (
+          <g data-temp-edge="true" pointerEvents="none">
+            <path d={`M ${tempEdge.sx} ${tempEdge.sy} L ${tempEdge.tx} ${tempEdge.ty}`} stroke="#555" strokeDasharray="4 4" fill="none" />
+          </g>
+        )}
       </svg>
     </div>
   );
