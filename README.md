@@ -1,6 +1,6 @@
 # ai-diagram-imp
 
-![AI Diagram Imp Logo](./diagramimp%20.png)
+![AI Diagram Imp logo: stylized gradient imp-shaped polygon with IMP text](./logo.svg)
 
 AI Diagram Imp web-based diagram generator scaffold (architecture docs, React+Vite app, command pattern, testing setup).
 
@@ -17,6 +17,22 @@ Captured with Playwright at a 1600x900 desktop viewport using predefined example
 | Basic Flow | Mini Architecture | Grid Layout |
 |------------|-------------------|-------------|
 | ![Basic Flow](app/screenshots/basic-flow.png) | ![Mini Architecture](app/screenshots/architecture.png) | ![Grid Layout](app/screenshots/grid.png) |
+
+### Node Variety & Property Pane
+
+Automatically generated via `tests/e2e/readme-screenshots.spec.ts`.
+
+| Node Shape Variety | Selected Node with Property Pane |
+|--------------------|----------------------------------|
+| ![Diagram showing multiple nodes with varied shapes (square, triangle, star, ellipse, rectangle) laid out on canvas](app/screenshots/readme-overview.png) | ![Selected node with properties panel open displaying editable fields including text input and shape selector](app/screenshots/readme-property-pane.png) |
+
+### Connected Examples
+
+These variants include edges to show link rendering.
+
+| Basic Flow (Connected) | Architecture (Connected) |
+|------------------------|--------------------------|
+| ![Basic Flow connected with edges between start→process→end](app/screenshots/basic-flow-connected.png) | ![Architecture connected showing client to api/auth and api/auth to db/cache edges](app/screenshots/architecture-connected.png) |
 
 Regenerate locally:
 
